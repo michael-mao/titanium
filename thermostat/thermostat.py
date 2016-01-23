@@ -3,7 +3,7 @@
 from . import errors
 
 
-class Singleton( type ):
+class Singleton(type):
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
