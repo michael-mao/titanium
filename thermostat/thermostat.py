@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import errors
+from . import errors
 
 
 class Singleton(type):
@@ -62,29 +62,3 @@ class Thermostat(metaclass=Singleton):
         self.validate_temp(low)
         self.validate_temp(high)
         self._user_temp_range = temp_range
-
-
-def main():
-    t = Thermostat()
-
-    while True:
-        # get and set current temperature
-        current_temp = int(input('Enter current temperature: '))
-        try:
-            t.current_temp = current_temp
-        except errors.ValidationErrorBase as e:
-            print(e)
-
-        # get and set user user temperature range
-        user_temp_low = int(input('Enter lower bound: '))
-        user_temp_high = int(input('Enter higher bound: '))
-        try:
-            t.user_temp_range = (user_temp_low, user_temp_high)
-        except errors.TemperatureValidationError as e:
-            print(e)
-
-        t.run()
-
-
-if __name__ == "__main__":
-    main()
