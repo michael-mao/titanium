@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 
+from enum import Enum, unique
 from . import errors
+
+
+@unique
+class State(Enum):
+    OFF = 0
+    HEAT = 1
+    COOL = 2
 
 
 class Singleton(type):
@@ -17,7 +25,7 @@ class Thermostat(metaclass=Singleton):
     MAX_TEMPERATURE = 35
 
     def __init__(self):
-        self._is_on = False
+        self._state = State.OFF
         self._current_temperature = 0.0
         self._temperature_range = (0.0, 0.0)
 
@@ -38,8 +46,8 @@ class Thermostat(metaclass=Singleton):
             raise errors.TemperatureValidationError('Temperature cannot be above {}'.format(cls.MAX_TEMPERATURE))
 
     @property
-    def is_on(self):
-        return self._is_on
+    def is_active(self):
+        return self._state != State.OFF
 
     @property
     def current_temperature(self):
