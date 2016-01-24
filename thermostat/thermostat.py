@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from logging import getLogger
 from enum import Enum, unique
 from . import errors
 
@@ -28,15 +29,16 @@ class Thermostat(metaclass=Singleton):
         self._state = State.OFF
         self._current_temperature = 0.0
         self._temperature_range = (0.0, 0.0)
+        self.logger = getLogger('app.thermostat')
 
     def run(self):
         low, high = self.temperature_range
         if self.current_temperature < low:
-            print('Thermostat is heating.')
+            self.logger.info('Thermostat is heating.')
         elif self.current_temperature > high:
-            print('Thermostat is cooling.')
+            self.logger.info('Thermostat is cooling.')
         else:
-            print('Thermostat is inactive.')
+            self.logger.info('Thermostat is inactive.')
 
     @classmethod
     def validate_temperature(cls, value):
