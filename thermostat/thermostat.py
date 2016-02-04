@@ -2,7 +2,7 @@
 
 from logging import getLogger
 from enum import Enum, unique
-from . import errors
+from . import errors, utils
 
 
 @unique
@@ -28,6 +28,7 @@ class Thermostat(metaclass=Singleton):
     def __init__(self):
         self._current_temperature = 0.0
         self._temperature_range = (0.0, 0.0)
+        self._on_rpi = utils.on_rpi()
         self.state = State.OFF
         self.logger = getLogger('app.thermostat')
 
