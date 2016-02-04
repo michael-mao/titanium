@@ -26,19 +26,26 @@ class Thermostat(metaclass=Singleton):
     MAX_TEMPERATURE = 35
 
     def __init__(self):
-        self._state = State.OFF
         self._current_temperature = 0.0
         self._temperature_range = (0.0, 0.0)
+        self.state = State.OFF
         self.logger = getLogger('app.thermostat')
 
     def run(self):
+        while True:
+            self.update_state()
+
+    def update_state(self):
         low, high = self.temperature_range
         if self.current_temperature < low:
-            self.logger.info('Thermostat is heating.')
+            self.logger.debug('Thermostat is heating.')
+            self.state = State.HEAT
         elif self.current_temperature > high:
-            self.logger.info('Thermostat is cooling.')
+            self.logger.debug('Thermostat is cooling.')
+            self.state = State.COOL
         else:
-            self.logger.info('Thermostat is inactive.')
+            self.logger.debug('Thermostat is inactive.')
+            self.state = State.OFF
 
     @classmethod
     def validate_temperature(cls, value):
@@ -49,7 +56,7 @@ class Thermostat(metaclass=Singleton):
 
     @property
     def is_active(self):
-        return self._state != State.OFF
+        return self.state != State.OFF
 
     @property
     def current_temperature(self):
