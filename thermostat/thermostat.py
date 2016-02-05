@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import time
+
 from logging import getLogger
 from enum import Enum, unique
-from . import errors, utils
+from . import errors, utils, weather
 
 
 @unique
@@ -12,16 +14,7 @@ class State(Enum):
     COOL = 2
 
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
-class Thermostat(metaclass=Singleton):
+class Thermostat(metaclass=utils.Singleton):
     MIN_TEMPERATURE = 0
     MAX_TEMPERATURE = 35
 
@@ -33,8 +26,13 @@ class Thermostat(metaclass=Singleton):
         self.logger = getLogger('app.thermostat')
 
     def run(self):
+        # daemon thread to fetch weather data
+        weather_thread = weather.WeatherAPI()
+        weather_thread.start()
+
         while True:
             self.update_state()
+            time.sleep(5)
 
     def update_state(self):
         low, high = self.temperature_range
