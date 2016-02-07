@@ -1,64 +1,81 @@
 # -*- coding: utf-8 -*-
 
-from . import errors
+import time
+
+from logging import getLogger
+from enum import Enum, unique
+from . import errors, utils, weather
 
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
+@unique
+class State(Enum):
+    OFF = 0
+    HEAT = 1
+    COOL = 2
 
 
-class Thermostat(metaclass=Singleton):
-    MIN_TEMP = 0
-    MAX_TEMP = 35
+class Thermostat(metaclass=utils.Singleton):
+    MIN_TEMPERATURE = 0
+    MAX_TEMPERATURE = 35
 
     def __init__(self):
-        self._is_on = False
-        self._current_temp = 0.0
-        self._user_temp_range = (0.0, 0.0)
+        self._settings = utils.init_settings()
+        self._current_temperature = 0.0
+        self._temperature_range = (0.0, 0.0)
+        self._on_rpi = utils.on_rpi()
+        self.state = State.OFF
+        self.logger = getLogger('app.thermostat')
 
     def run(self):
-        low, high = self.user_temp_range
-        if self.current_temp < low:
-            print('Thermostat is heating.')
-        elif self.current_temp > high:
-            print('Thermostat is cooling.')
+        # daemon thread to fetch weather data
+        weather_thread = weather.WeatherAPI()
+        weather_thread.start()
+
+        while True:
+            self.update_state()
+            time.sleep(5)
+
+    def update_state(self):
+        low, high = self.temperature_range
+        if self.current_temperature < low:
+            self.logger.debug('Thermostat is heating.')
+            self.state = State.HEAT
+        elif self.current_temperature > high:
+            self.logger.debug('Thermostat is cooling.')
+            self.state = State.COOL
         else:
-            print('Thermostat is inactive.')
+            self.logger.debug('Thermostat is inactive.')
+            self.state = State.OFF
 
     @classmethod
-    def validate_temp(cls, value):
-        if value < cls.MIN_TEMP:
-            raise errors.TemperatureValidationError('Temperature cannot be below {}'.format(cls.MIN_TEMP))
-        if value > cls.MAX_TEMP:
-            raise errors.TemperatureValidationError('Temperature cannot be above {}'.format(cls.MAX_TEMP))
+    def validate_temperature(cls, value):
+        if value < cls.MIN_TEMPERATURE:
+            raise errors.TemperatureValidationError('Temperature cannot be below {}'.format(cls.MIN_TEMPERATURE))
+        if value > cls.MAX_TEMPERATURE:
+            raise errors.TemperatureValidationError('Temperature cannot be above {}'.format(cls.MAX_TEMPERATURE))
 
     @property
-    def is_on(self):
-        return self._is_on
+    def is_active(self):
+        return self.state != State.OFF
 
     @property
-    def current_temp(self):
-        return self._current_temp
+    def current_temperature(self):
+        return self._current_temperature
 
-    @current_temp.setter
-    def current_temp(self, value):
-        self.validate_temp(value)
-        self._current_temp = value
+    @current_temperature.setter
+    def current_temperature(self, value):
+        self.validate_temperature(value)
+        self._current_temperature = value
 
     @property
-    def user_temp_range(self):
-        return self._user_temp_range
+    def temperature_range(self):
+        return self._temperature_range
 
-    @user_temp_range.setter
-    def user_temp_range(self, temp_range):
-        low, high = temp_range
+    @temperature_range.setter
+    def temperature_range(self, t_range):
+        low, high = t_range
         if high < low:
             raise errors.TemperatureValidationError('Invalid range.')
-        self.validate_temp(low)
-        self.validate_temp(high)
-        self._user_temp_range = temp_range
+        self.validate_temperature(low)
+        self.validate_temperature(high)
+        self._temperature_range = t_range
