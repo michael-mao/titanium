@@ -19,6 +19,7 @@ class Thermostat(metaclass=utils.Singleton):
     MAX_TEMPERATURE = 35
 
     def __init__(self):
+        self._settings = utils.init_settings()
         self._current_temperature = 0.0
         self._temperature_range = (0.0, 0.0)
         self._on_rpi = utils.on_rpi()
