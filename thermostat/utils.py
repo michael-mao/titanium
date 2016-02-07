@@ -67,3 +67,29 @@ def init_settings():
 
     logger.debug('settings: ' + json.dumps(settings))
     return settings
+
+
+def init_history():
+    """ Set up history file.
+
+    History divided into 15min blocks for each day of the week.
+    """
+    logger = logging.getLogger('app.utils')
+    default_filename = 'default_history.json'
+    default_filepath = os.path.abspath(os.path.join(BASE_DIR, '..', default_filename))
+    filename = 'history.json'
+    filepath = os.path.abspath(os.path.join(BASE_DIR, '..', filename))
+
+    if os.path.isfile(filepath) is True:
+        logger.debug('loading existing history file')
+        with open(filepath) as f:
+            history = json.load(f)
+    else:
+        logger.debug('creating new history file')
+        with open(default_filepath) as f:
+            history = json.load(f)
+        with open(filepath, 'w') as f:
+            json.dump(history, f)
+
+    logger.debug('settings: ' + json.dumps(history))
+    return history
