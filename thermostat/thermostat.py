@@ -23,10 +23,15 @@ class Thermostat(metaclass=utils.Singleton):
         self._current_temperature = 0.0
         self._temperature_range = (0.0, 0.0)
         self._on_rpi = utils.on_rpi()
+        self.update_interval = 5
         self.state = State.OFF
         self.logger = getLogger('app.thermostat')
 
     def run(self):
+        """ Entry method.
+
+        Main event loop is here.
+        """
         # daemon thread to fetch weather data
         weather_thread = weather.WeatherAPI(
             self._settings['temperature_unit'],
@@ -37,7 +42,7 @@ class Thermostat(metaclass=utils.Singleton):
 
         while True:
             self.update_state()
-            time.sleep(5)
+            time.sleep(self.update_interval)
 
     def update_state(self):
         low, high = self.temperature_range

@@ -10,8 +10,11 @@ from . import utils, config, errors
 
 
 class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
+    """
+    Class to fetch weather data in background as a daemon thread. Uses Open Weather Map API.
+    Saves current weather data in the instance. Forecast data is discarded after initial fetch.
+    """
 
-    # TODO: pass in location parameter
     def __init__(self, unit, city, country_code):
         super().__init__()
         self._data = {
@@ -36,6 +39,11 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
             time.sleep(self.fetch_interval)
 
     def get_current_weather(self):
+        """
+        Fetch current weather and updates stored data.
+
+        :return: Tuple of current weather (temperature, humidity)
+        """
         self.logger.debug('fetching current weather')
         observation = self.owm.weather_at_place(self.location)
         weather = observation.get_weather()
@@ -51,7 +59,8 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
 
     def get_short_forecast(self):
         """
-        3 hour forecasts for next 5 days.
+        Fetch 3 hour forecasts for next 5 days. Data not saved.
+
         :return: List of tuples (ISO datetime, temperature)
         """
         self.logger.debug('fetching short forecast')
