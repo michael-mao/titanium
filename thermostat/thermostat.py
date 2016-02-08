@@ -28,7 +28,11 @@ class Thermostat(metaclass=utils.Singleton):
 
     def run(self):
         # daemon thread to fetch weather data
-        weather_thread = weather.WeatherAPI()
+        weather_thread = weather.WeatherAPI(
+            self._settings['temperature_unit'],
+            self._settings['city'],
+            self._settings['country_code'],
+        )
         weather_thread.start()
 
         while True:
