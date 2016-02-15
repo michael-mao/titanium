@@ -8,5 +8,9 @@ class ValidationErrorBase(Exception):
         super().__init__(message or self.default_message)
 
 
+class UnitValidationError(ValidationErrorBase):
+    default_message = 'Unknown unit.'
+
+
 class TemperatureValidationError(ValidationErrorBase):
     default_message = 'Temperature is invalid.'
