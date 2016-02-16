@@ -15,6 +15,7 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
     Class to fetch weather data in background as a daemon thread. Uses Open Weather Map API.
     Saves current weather data in the instance. Forecast data is discarded after initial fetch.
     """
+    DEFAULT_FETCH_INTERVAL = 1800  # 30 min
 
     def __init__(self, unit, city, country_code):
         super().__init__()
@@ -32,7 +33,7 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
         self._last_updated = datetime.datetime(datetime.MINYEAR, 1, 1)
         self.daemon = True
         self.logger = getLogger('app.weather')
-        self.fetch_interval = 1800  # 30min
+        self.fetch_interval = self.DEFAULT_FETCH_INTERVAL
         self.owm = pyowm.OWM(config.OWM_API_KEY)  # open weather map client
 
     def run(self):
@@ -42,7 +43,7 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
 
     def get_current_weather(self):
         """
-        Fetch current weather and updates stored data.
+        Fetch current weather and updates stored data. Keeps track of most recent successful update with a timestamp.
 
         :return: Tuple of current weather (temperature, humidity)
         """
@@ -51,13 +52,17 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
         try:
             observation = self.owm.weather_at_place(self.location)
         except Exception as e:
+            # reduce fetch interval if exception is connection related
             if not utils.connected_to_internet():
                 self.logger.info('no internet connection')
+                self.fetch_interval = 6000  # 10 min
             elif not self.owm.is_API_online():
                 self.logger.info('owm api unavailable')
+                self.fetch_interval = 6000  # 10 min
             else:
-                self.logger.error(e)
+                raise e
         else:
+            self.fetch_interval = self.DEFAULT_FETCH_INTERVAL
             weather = observation.get_weather()
             t = weather.get_temperature(self.unit)
 
