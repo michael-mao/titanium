@@ -2,6 +2,7 @@
 
 import threading
 import time
+import datetime
 
 import pyowm
 
@@ -14,6 +15,7 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
     Class to fetch weather data in background as a daemon thread. Uses Open Weather Map API.
     Saves current weather data in the instance. Forecast data is discarded after initial fetch.
     """
+    DEFAULT_FETCH_INTERVAL = 1800  # 30 min
 
     def __init__(self, unit, city, country_code):
         super().__init__()
@@ -28,9 +30,10 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
             'country_code': country_code
         }
         self._unit = unit  # 'celsius' or 'fahrenheit'
+        self._last_updated = datetime.datetime(datetime.MINYEAR, 1, 1)
         self.daemon = True
         self.logger = getLogger('app.weather')
-        self.fetch_interval = 1800  # 30min
+        self.fetch_interval = self.DEFAULT_FETCH_INTERVAL
         self.owm = pyowm.OWM(config.OWM_API_KEY)  # open weather map client
 
     def run(self):
@@ -40,21 +43,36 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
 
     def get_current_weather(self):
         """
-        Fetch current weather and updates stored data.
+        Fetch current weather and updates stored data. Keeps track of most recent successful update with a timestamp.
 
         :return: Tuple of current weather (temperature, humidity)
         """
         self.logger.debug('fetching current weather')
-        observation = self.owm.weather_at_place(self.location)
-        weather = observation.get_weather()
 
-        t = weather.get_temperature(self.unit)
-        self._data['temperature'] = t['temp']
-        self._data['temperature_high'] = t['temp_max']
-        self._data['temperature_low'] = t['temp_min']
-        self._data['humidity'] = weather.get_humidity()
+        try:
+            observation = self.owm.weather_at_place(self.location)
+        except Exception as e:
+            # reduce fetch interval if exception is connection related
+            if not utils.connected_to_internet():
+                self.logger.info('no internet connection')
+                self.fetch_interval = 6000  # 10 min
+            elif not self.owm.is_API_online():
+                self.logger.info('owm api unavailable')
+                self.fetch_interval = 6000  # 10 min
+            else:
+                raise e
+        else:
+            self.fetch_interval = self.DEFAULT_FETCH_INTERVAL
+            weather = observation.get_weather()
+            t = weather.get_temperature(self.unit)
 
-        self.logger.debug('current weather for {0}: {1}'.format(self.location, self._data))
+            self._data['temperature'] = t['temp']
+            self._data['temperature_high'] = t['temp_max']
+            self._data['temperature_low'] = t['temp_min']
+            self._data['humidity'] = weather.get_humidity()
+            self._last_updated = datetime.datetime.now()
+            self.logger.debug('current weather for {0}: {1}'.format(self.location, self._data))
+
         return self.temperature, self.humidity
 
     def get_short_forecast(self):
@@ -97,3 +115,7 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
     @property
     def humidity(self):
         return self._data['humidity']
+
+    @property
+    def last_updated(self):
+        return self._last_updated
