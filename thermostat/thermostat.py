@@ -190,5 +190,6 @@ class Thermostat(metaclass=utils.Singleton):
     def temperature_range_equilibrium(self):
         # biased towards range ceiling
         low, high = self.temperature_range
-        difference = high - low
-        return (difference / 4) + difference
+        bias = (high - low) / 4
+        equilibrium = sum(self.temperature_range) / 2
+        return equilibrium + bias
