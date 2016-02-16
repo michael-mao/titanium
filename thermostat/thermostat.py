@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import time
+import datetime
 
 from logging import getLogger
 from functools import reduce
@@ -47,6 +48,11 @@ class Thermostat(metaclass=utils.Singleton):
         self.update_interval = 5
         self.state = State.OFF
         self.logger = getLogger('app.thermostat')
+        self.weather_thread = weather.WeatherAPI(
+            self._settings['temperature_unit'],
+            self._settings['city'],
+            self._settings['country_code'],
+        )
 
     def run(self):
         """ Entry method.
@@ -58,13 +64,8 @@ class Thermostat(metaclass=utils.Singleton):
             sensor.init_sensor()
             self.current_temperature = sensor.read_temperature()
 
-        # daemon thread to fetch weather data
-        weather_thread = weather.WeatherAPI(
-            self._settings['temperature_unit'],
-            self._settings['city'],
-            self._settings['country_code'],
-        )
-        weather_thread.start()
+        # start daemon thread to fetch weather data
+        self.weather_thread.start()
 
         while True:
             self.update_state()
@@ -85,17 +86,26 @@ class Thermostat(metaclass=utils.Singleton):
         elif self.current_temperature > (high + self.temperature_increment):
             self.state = State.COOL
         else:
-            # within range, use decision matrix
+            # within range, build and evaluate decision matrix
             params_list = list()
-            params_list.append(('internal_temperature', self.temperature_range_equilibrium - self.current_temperature))
-            # TODO: weather, history, price
+
+            # TODO: likely needs an additional multiplier to amplify difference
+            rating = self.temperature_range_equilibrium - self.current_temperature
+            params_list.append(('internal_temperature', rating))
+
+            # include external temperature if data is recent
+            # TODO: factor in external humidity
+            if (datetime.datetime.now() - self.weather_thread.last_updated).total_seconds() < 3600:
+                rating = self.temperature_range_ceiling - self.weather_thread.temperature
+                params_list.append(('external_temperature', rating))
+
+            # TODO: history, price
             matrix = self.build_decision_matrix(params_list)
             self.state = self.evaluate_decision_matrix(matrix)
 
         self.logger.debug('thermostat state updated to {0}'.format(self.state))
 
-    @classmethod
-    def build_decision_matrix(cls, params_list):
+    def build_decision_matrix(self, params_list):
         """ Creates decision matrix data structure.
 
         Matches passed in parameter and rating tuple to the respective weighting in DM_WEIGHTINGS.
@@ -110,21 +120,22 @@ class Thermostat(metaclass=utils.Singleton):
         matrix = {}
         total_weight = 0.0
         for parameter, rating in params_list:
-            weight = cls.DM_WEIGHTINGS.get(parameter)
+            weight = self.DM_WEIGHTINGS.get(parameter)
             if weight is not None:
                 matrix[parameter] = (weight, rating)
                 total_weight += weight
+            self.logger.debug('parameter {0} has weight {1} and rating {2}'.format(parameter, weight, rating))
 
         # if there are missing parameter ratings, recalculate weightings
-        if len(matrix) != len(cls.DM_WEIGHTINGS):
+        if len(matrix) != len(self.DM_WEIGHTINGS):
             for key, value in matrix.items():
                 weight, rating = value
                 matrix[key] = (weight/total_weight, rating)
+                self.logger.debug('parameter {0} has recalculated weight, rating {1}'.format(key, matrix[key]))
 
         return matrix
 
-    @classmethod
-    def evaluate_decision_matrix(cls, matrix):
+    def evaluate_decision_matrix(self, matrix):
         """ Evaluates decision matrix.
 
         Calculates the total score based on weighting and rating of each parameter.
@@ -141,13 +152,15 @@ class Thermostat(metaclass=utils.Singleton):
         for key, value in matrix.items():
             score = reduce(lambda weight, rating: weight*(rating/total_rating), value)
             total_score += score
+        self.logger.debug('total rating is {0}'.format(total_rating))
+        self.logger.debug('total score is {0}'.format(total_score))
 
         new_state = State.OFF
-        if total_score > cls.DM_HEAT_THRESHOLD:
+        if total_score > self.DM_HEAT_THRESHOLD:
             new_state = State.HEAT
-        elif total_score < cls.DM_COOL_THRESHOLD:
+        elif total_score < self.DM_COOL_THRESHOLD:
             new_state = State.COOL
-        print('Total score is {}'.format(total_score))
+
         return new_state
 
     @classmethod
@@ -185,6 +198,14 @@ class Thermostat(metaclass=utils.Singleton):
         self.validate_temperature(low)
         self.validate_temperature(high)
         self._temperature_range = t_range
+
+    @property
+    def temperature_range_floor(self):
+        return min(self.temperature_range)
+
+    @property
+    def temperature_range_ceiling(self):
+        return max(self.temperature_range)
 
     @property
     def temperature_range_equilibrium(self):
