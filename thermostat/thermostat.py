@@ -2,6 +2,7 @@
 
 import time
 import datetime
+import threading
 
 from logging import getLogger
 from functools import reduce
@@ -65,6 +66,9 @@ class Thermostat(metaclass=utils.Singleton):
             self._settings['city'],
             self._settings['country_code'],
         )
+        # TODO: actively record user actions (input range, changes after prediction)
+        self.history_thread = threading.Timer(600, self.set_history)
+        self.history_thread.daemon = True
 
     def run(self):
         """ Entry method.
@@ -79,9 +83,21 @@ class Thermostat(metaclass=utils.Singleton):
         # start daemon thread to fetch weather data
         self.weather_thread.start()
 
+        # start daemon thread to record history data
+        self.history_thread.start()
+
         while True:
             self.update_state()
             time.sleep(self.update_interval)
+
+    def stop(self):
+        """ Exit handler.
+
+        Write data stored in memory back to files.
+        """
+        utils.write_to_file(utils.SETTINGS_FILENAME, self._settings)
+        utils.write_to_file(utils.HISTORY_FILENAME, self._history)
+        self.logger.info('cleanup completed')
 
     def update_state(self):
         """ Decision maker.
