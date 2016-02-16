@@ -6,6 +6,7 @@ import logging
 import json
 import socket
 import datetime
+import decimal
 
 
 # project root dir
@@ -49,6 +50,17 @@ def init_logging():
     logger.addHandler(fh)
     logger.addHandler(ch)
     return logger
+
+
+def init_context():
+    """ Context setup for modules.
+
+    :return: None
+    """
+    # ensures all threads use same context
+    decimal.DefaultContext.prec = 9
+    decimal.DefaultContext.rounding = decimal.ROUND_HALF_UP  # >=0.5 rounds away from zero
+    decimal.setcontext(decimal.DefaultContext)
 
 
 def init_settings():
