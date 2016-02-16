@@ -20,6 +20,17 @@ class State(Enum):
         return self.name
 
 
+@unique
+class WeekDay(Enum):
+    monday = 0
+    tuesday = 1
+    wednesday = 2
+    thursday = 3
+    friday = 4
+    saturday = 5
+    sunday = 6
+
+
 class Thermostat(metaclass=utils.Singleton):
     # bounds for input range
     MIN_TEMPERATURE = 0
@@ -41,6 +52,7 @@ class Thermostat(metaclass=utils.Singleton):
 
     def __init__(self):
         self._settings = utils.init_settings()
+        self._history = utils.init_history()
         self._current_temperature = 0.0
         self._temperature_range = (0.0, 0.0)
         self._on_rpi = utils.on_rpi()
@@ -90,16 +102,23 @@ class Thermostat(metaclass=utils.Singleton):
             params_list = list()
 
             # TODO: likely needs an additional multiplier to amplify difference
+            # TODO: score is always max when this is the only parameter in DM
             rating = self.temperature_range_equilibrium - self.current_temperature
             params_list.append(('internal_temperature', rating))
 
-            # include external temperature if data is recent
+            # use external temperature if the data is recent
             # TODO: factor in external humidity
             if (datetime.datetime.now() - self.weather_thread.last_updated).total_seconds() < 3600:
                 rating = self.temperature_range_ceiling - self.weather_thread.temperature
                 params_list.append(('external_temperature', rating))
 
-            # TODO: history, price
+            # use history if the data exists
+            past_temperature = self.get_history()
+            if past_temperature is not None:
+                rating = past_temperature - self.current_temperature
+                params_list.append(('history_temperature', rating))
+
+            # TODO: price
             matrix = self.build_decision_matrix(params_list)
             self.state = self.evaluate_decision_matrix(matrix)
 
@@ -162,6 +181,49 @@ class Thermostat(metaclass=utils.Singleton):
             new_state = State.COOL
 
         return new_state
+
+    def get_history(self, dt=None):
+        """ Get temperature at specified datetime.
+
+        If dt is None, defaults to current time. Full datetime is needed to evaluate day of week.
+
+        :param dt: datetime.datetime object
+        :return: temperature
+        """
+        if dt is None:
+            dt = datetime.datetime.now()
+        elif not isinstance(dt, datetime.datetime):
+            self.logger.error('must be datetime object')
+            return None
+
+        rounded_dt = utils.round_time(dt)
+        day = WeekDay(rounded_dt.weekday()).name
+        time_block = rounded_dt.strftime('%H:%M')
+        return self._history[day][time_block]
+
+    def set_history(self, dt=None, temperature=None):
+        """ Set temperature at specified datetime.
+
+        If dt is None, defaults to current time. Full datetime is need to evaluate day of week.
+        If temperature is None, defaults to current temperature.
+
+        :param dt: datetime.datetime object
+        :param temperature: temperature to record
+        :return: None
+        """
+        if temperature is None:
+            temperature = self.current_temperature
+
+        if dt is None:
+            dt = datetime.datetime.now()
+        elif not isinstance(dt, datetime.datetime):
+            self.logger.error('must be datetime object')
+            return None
+
+        rounded_dt = utils.round_time(dt)
+        day = WeekDay(rounded_dt.weekday()).name
+        time_block = rounded_dt.strftime('%H:%M')
+        self._history[day][time_block] = temperature
 
     @classmethod
     def validate_temperature(cls, value):

@@ -5,6 +5,7 @@ import os
 import logging
 import json
 import socket
+import datetime
 
 
 # project root dir
@@ -111,3 +112,20 @@ def connected_to_internet(host='8.8.8.8', port=53, timeout=1):
     except socket.error:
         pass
     return False
+
+
+def round_time(dt, round_to=900):
+    """ Round datetime to nearest multiple of round_to.
+
+    Used by history feature.
+
+    :param dt: datetime.datetime object
+    :param round_to: in seconds, default 15 min
+    :return: rounded datetime.datetime object
+    """
+    if not isinstance(dt, datetime.datetime):
+        return None
+
+    seconds = (dt - dt.min).seconds
+    rounding = (seconds + round_to / 2) // round_to * round_to  # // is floor division
+    return dt + datetime.timedelta(0, rounding-seconds, -dt.microsecond)
