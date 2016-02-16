@@ -7,6 +7,7 @@ import threading
 from logging import getLogger
 from functools import reduce
 from enum import Enum, unique
+from decimal import Decimal
 
 from . import errors, utils, weather, sensor
 
@@ -40,24 +41,24 @@ class Thermostat(metaclass=utils.Singleton):
     # decision matrix thresholds, within range(-1, 1)
     # -1              COOL_THRESHOLD      HEAT_THRESHOLD          1
     # --------COOL--------|--------OFF--------|--------HEAT--------
-    DM_HEAT_THRESHOLD = 0.5
-    DM_COOL_THRESHOLD = -0.5
+    DM_HEAT_THRESHOLD = Decimal('0.5')
+    DM_COOL_THRESHOLD = Decimal('-0.5')
 
     # decision matrix parameters and their weighting, weightings must sum to 1
     DM_WEIGHTINGS = {
-        'internal_temperature': 0.4,
-        'external_temperature': 0.2,
-        'history_temperature': 0.2,
-        'energy_price': 0.2,
+        'internal_temperature': Decimal('0.4'),
+        'external_temperature': Decimal('0.2'),
+        'history_temperature': Decimal('0.2'),
+        'energy_price': Decimal('0.2'),
     }
 
     def __init__(self):
         self._settings = utils.init_settings()
         self._history = utils.init_history()
-        self._current_temperature = 0.0
-        self._temperature_range = (0.0, 0.0)
+        self._current_temperature = Decimal(0)
+        self._temperature_range = (Decimal(0), Decimal(0))
         self._on_rpi = utils.on_rpi()
-        self.temperature_increment = 0.5
+        self.temperature_increment = Decimal('0.5')
         self.update_interval = 5
         self.state = State.OFF
         self.logger = getLogger('app.thermostat')
@@ -153,7 +154,7 @@ class Thermostat(metaclass=utils.Singleton):
         :return: decision matrix, dictionary of the form { parameter: (weight, rating), ... }
         """
         matrix = {}
-        total_weight = 0.0
+        total_weight = Decimal(0)
         for parameter, rating in params_list:
             weight = self.DM_WEIGHTINGS.get(parameter)
             if weight is not None:
@@ -181,7 +182,7 @@ class Thermostat(metaclass=utils.Singleton):
         :param matrix: decision matrix
         :return: new thermostat state
         """
-        total_score = 0.0
+        total_score = Decimal(0)
         total_rating = reduce(lambda x, y: x+y, [value[1] for value in matrix.values()])
 
         for key, value in matrix.items():
@@ -215,7 +216,8 @@ class Thermostat(metaclass=utils.Singleton):
         rounded_dt = utils.round_time(dt)
         day = WeekDay(rounded_dt.weekday()).name
         time_block = rounded_dt.strftime('%H:%M')
-        return self._history[day][time_block]
+        temperature = self._history[day][time_block]
+        return Decimal(temperature) if temperature is not None else None
 
     def set_history(self, dt=None, temperature=None):
         """ Set temperature at specified datetime.
@@ -239,7 +241,7 @@ class Thermostat(metaclass=utils.Singleton):
         rounded_dt = utils.round_time(dt)
         day = WeekDay(rounded_dt.weekday()).name
         time_block = rounded_dt.strftime('%H:%M')
-        self._history[day][time_block] = temperature
+        self._history[day][time_block] = str(temperature)  # store as str to avoid conversion to JSON float
 
     @classmethod
     def validate_temperature(cls, value):

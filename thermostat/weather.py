@@ -6,7 +6,9 @@ import datetime
 
 import pyowm
 
+from decimal import Decimal
 from logging import getLogger
+
 from . import utils, config, errors
 
 
@@ -20,9 +22,9 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
     def __init__(self, unit, city, country_code):
         super().__init__()
         self._data = {
-            'temperature': 0.0,
-            'temperature_high': 0.0,
-            'temperature_low': 0.0,
+            'temperature': Decimal(0),
+            'temperature_high': Decimal(0),
+            'temperature_low': Decimal(0),
             'humidity': 0,
         }
         self._location = {
@@ -66,9 +68,9 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
             weather = observation.get_weather()
             t = weather.get_temperature(self.unit)
 
-            self._data['temperature'] = t['temp']
-            self._data['temperature_high'] = t['temp_max']
-            self._data['temperature_low'] = t['temp_min']
+            self._data['temperature'] = Decimal(str(t['temp']))  # convert to str first so precision is not messed up
+            self._data['temperature_high'] = Decimal(str(t['temp_max']))
+            self._data['temperature_low'] = Decimal(str(t['temp_min']))
             self._data['humidity'] = weather.get_humidity()
             self._last_updated = datetime.datetime.now()
             self.logger.debug('current weather for {0}: {1}'.format(self.location, self._data))
