@@ -24,7 +24,10 @@ def main():
     except errors.TemperatureValidationError as e:
         logger.error(e)
     else:
-        t.run()
+        try:
+            t.run()
+        finally:
+            t.stop()
 
 
 if __name__ == "__main__":
