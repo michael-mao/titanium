@@ -4,6 +4,7 @@ import platform
 import os
 import logging
 import json
+import socket
 
 
 # project root dir
@@ -93,3 +94,20 @@ def init_history():
 
     logger.debug('settings: ' + json.dumps(history))
     return history
+
+
+def connected_to_internet(host='8.8.8.8', port=53, timeout=1):
+    """ Ping a host to determine if internet connection available.
+
+    :param host: 8.8.8.8 (google-public-dns-a.google.com)
+    :param port: 53/tcp
+    :param timeout: in seconds
+    :return boolean
+    """
+    try:
+        socket.setdefaulttimeout(timeout)
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM,).connect((host, port))
+        return True
+    except socket.error:
+        pass
+    return False

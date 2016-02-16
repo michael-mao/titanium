@@ -2,6 +2,7 @@
 
 import threading
 import time
+import datetime
 
 import pyowm
 
@@ -28,6 +29,7 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
             'country_code': country_code
         }
         self._unit = unit  # 'celsius' or 'fahrenheit'
+        self._last_updated = datetime.datetime(datetime.MINYEAR, 1, 1)
         self.daemon = True
         self.logger = getLogger('app.weather')
         self.fetch_interval = 1800  # 30min
@@ -45,16 +47,27 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
         :return: Tuple of current weather (temperature, humidity)
         """
         self.logger.debug('fetching current weather')
-        observation = self.owm.weather_at_place(self.location)
-        weather = observation.get_weather()
 
-        t = weather.get_temperature(self.unit)
-        self._data['temperature'] = t['temp']
-        self._data['temperature_high'] = t['temp_max']
-        self._data['temperature_low'] = t['temp_min']
-        self._data['humidity'] = weather.get_humidity()
+        try:
+            observation = self.owm.weather_at_place(self.location)
+        except Exception as e:
+            if not utils.connected_to_internet():
+                self.logger.info('no internet connection')
+            elif not self.owm.is_API_online():
+                self.logger.info('owm api unavailable')
+            else:
+                self.logger.error(e)
+        else:
+            weather = observation.get_weather()
+            t = weather.get_temperature(self.unit)
 
-        self.logger.debug('current weather for {0}: {1}'.format(self.location, self._data))
+            self._data['temperature'] = t['temp']
+            self._data['temperature_high'] = t['temp_max']
+            self._data['temperature_low'] = t['temp_min']
+            self._data['humidity'] = weather.get_humidity()
+            self._last_updated = datetime.datetime.now()
+            self.logger.debug('current weather for {0}: {1}'.format(self.location, self._data))
+
         return self.temperature, self.humidity
 
     def get_short_forecast(self):
@@ -97,3 +110,7 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
     @property
     def humidity(self):
         return self._data['humidity']
+
+    @property
+    def last_updated(self):
+        return self._last_updated
