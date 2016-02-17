@@ -7,6 +7,7 @@ import json
 import socket
 import datetime
 import decimal
+import urllib.request
 
 
 # project root dir
@@ -163,3 +164,22 @@ def round_time(dt, round_to=900):
     seconds = (dt - dt.min).seconds
     rounding = (seconds + round_to / 2) // round_to * round_to  # // is floor division
     return dt + datetime.timedelta(0, rounding-seconds, -dt.microsecond)
+
+
+def get_geolocation():
+    """ Get current geolocation based on ip address.
+
+    :return: dictionary
+    """
+    IP_ENDPOINT = 'http://ip.42.pl/raw'
+    GEOLOCATION_ENDPOINT = 'http://ip-api.com/json/{ip}?fields=country,countryCode,region,regionName,city,lat,lon,timezone,status'
+
+    # get ip address
+    with urllib.request.urlopen(IP_ENDPOINT) as response:
+        ip_address = response.read().decode()
+    # get geolocation
+    with urllib.request.urlopen(GEOLOCATION_ENDPOINT.format(ip=ip_address)) as response:
+        raw_data = response.read().decode()
+
+    geolocation = json.loads(raw_data)
+    return geolocation if geolocation['status'] == 'success' else None
