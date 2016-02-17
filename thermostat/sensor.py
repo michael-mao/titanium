@@ -4,6 +4,7 @@ import os
 import glob
 
 from logging import getLogger
+from decimal import Decimal
 
 
 logger = getLogger('app.sensor')
@@ -25,8 +26,7 @@ def read_temperature():
 
     # parse results from the file
     crc = sensor[0].split()[-1]
-    temperature = float(sensor[1].split()[-1].strip('t='))
-    temperature = (temperature/1000)
+    temperature = Decimal(sensor[1].split()[-1].strip('t=')) / 1000
 
     # TODO: what is this
     if 'YES' in crc:
@@ -34,3 +34,4 @@ def read_temperature():
         return temperature
     else:
         logger.error('sensor CRC check failed')
+        return None
