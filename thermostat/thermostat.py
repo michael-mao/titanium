@@ -199,6 +199,24 @@ class Thermostat(metaclass=utils.Singleton):
 
         return new_state
 
+    def get_setting(self, name):
+        """ Get setting value.
+
+        :param name: setting name
+        :return: setting value, None if setting does not exist
+        """
+        return self._settings.get(name)
+
+    def set_setting(self, name, value):
+        """ Set setting value.
+
+        :param name: setting name
+        :param value: setting value
+        :return: None
+        """
+        if name in self._settings:
+            self._settings[name] = value
+
     def get_history(self, dt=None):
         """ Get temperature at specified datetime.
 
