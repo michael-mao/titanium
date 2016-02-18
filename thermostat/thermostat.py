@@ -34,6 +34,15 @@ class WeekDay(Enum):
 
 
 class Thermostat(metaclass=utils.Singleton):
+    """ Main class.
+
+    Contains decision making algorithm. Gathers all available input and data from sources.
+    Maintains settings and history in memory.
+    Spawns a number of daemon threads to perform background tasks.
+
+    Notes:
+        - All floating point arithmetic should use Decimal type, pass in number as str to maintain precision
+    """
     # bounds for input range
     MIN_TEMPERATURE = 0
     MAX_TEMPERATURE = 35
@@ -149,7 +158,7 @@ class Thermostat(metaclass=utils.Singleton):
         a key in DM_WEIGHTINGS, it will not be included in the final matrix (other parameter weightings will be
         recalculated accordingly).
 
-        :param params: list of tuples, (parameter_name, rating)
+        :param params_list: list of tuples, (parameter_name, rating)
             - parameter_name must match a key in DM_WEIGHTINGS
         :return: decision matrix, dictionary of the form { parameter: (weight, rating), ... }
         """
