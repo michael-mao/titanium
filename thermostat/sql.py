@@ -37,7 +37,7 @@ class DB:
     def insert(self, row, commit=True):
         raise NotImplementedError
 
-    def select(self, where):
+    def select(self, select='*', where=None):
         raise NotImplementedError
 
     def commit(self):
@@ -64,14 +64,21 @@ class CostTable(DB):
     def insert_csv(self, filename, commit=True):
         with open(filename) as f:
             csv_data = csv.reader(f)
-        for row in csv_data:
-            self.cursor.execute("INSERT INTO cost_schedule VALUES (?)", row)
+            for row in csv_data:
+                self.cursor.execute("INSERT INTO cost_schedule VALUES (?, ?, ?, ?, ?)", row)
         if commit is True:
             self.commit()
 
-    def select(self, where):
-        self.cursor.execute(
-            "SELECT * FROM cost_schedule WHERE country_code=:country_code AND city=:city AND company=:company", where
-        )
-        self.logger.debug('selecting rows where: {0}'.format(where))
+    def select(self, select='*', where=None):
+        query = 'SELECT {0} FROM cost_schedule'.format(select)
+        if where is not None:
+            conditions = list()
+            for key, value in where.items():
+                if isinstance(value, str):
+                    conditions.append('{0}=\'{1}\''.format(key, value))
+                elif isinstance(value, int):
+                    conditions.append('{0}={1}'.format(key, value))
+            query += ' WHERE {0}'.format(' AND '.join(conditions))
+        self.logger.debug('query: {0}'.format(query))
+        self.cursor.execute(query)
         return self.cursor.fetchall()

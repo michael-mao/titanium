@@ -9,7 +9,7 @@ from functools import reduce
 from enum import Enum, unique
 from decimal import Decimal
 
-from . import errors, utils, weather, sensor
+from . import errors, utils, weather, sensor, sql
 
 
 @unique
@@ -58,7 +58,7 @@ class Thermostat(metaclass=utils.Singleton):
         'internal_temperature': Decimal('0.4'),
         'external_temperature': Decimal('0.2'),
         'history_temperature': Decimal('0.2'),
-        'energy_price': Decimal('0.2'),
+        'energy_cost': Decimal('0.2'),
     }
 
     def __init__(self):
@@ -71,6 +71,7 @@ class Thermostat(metaclass=utils.Singleton):
         self.update_interval = 5
         self.state = State.OFF
         self.logger = getLogger('app.thermostat')
+        self.cost_table = sql.CostTable()
         self.weather_thread = weather.WeatherAPI(
             self._settings['temperature_unit'],
             self._settings['city'],
@@ -107,6 +108,7 @@ class Thermostat(metaclass=utils.Singleton):
         """
         utils.write_to_file(utils.SETTINGS_FILENAME, self._settings)
         utils.write_to_file(utils.HISTORY_FILENAME, self._history)
+        self.cost_table.close()
         self.logger.info('cleanup completed')
 
     def update_state(self):
@@ -144,7 +146,21 @@ class Thermostat(metaclass=utils.Singleton):
                 rating = past_temperature - self.current_temperature
                 params_list.append(('history_temperature', rating))
 
-            # TODO: price
+            # use energy cost if data exists
+            cost_data = self.cost_table.select(
+                select='start_time,cost',
+                where={'country_code': self._settings['country_code'], 'city': self._settings['city']}
+            )
+            if cost_data:
+                cost_data = dict(cost_data)
+                lowest_cost = min(cost_data.values())
+                current_hour = utils.round_time(datetime.datetime.now(), 3600).hour
+                current_cost = cost_data.get(current_hour)
+                if current_cost is not None:
+                    ratio = Decimal(lowest_cost) / Decimal(current_cost)
+                    rating = ratio * params_list[0][1]  # ratio * (internal temperature rating)
+                    params_list.append(('energy_cost', rating))
+
             matrix = self.build_decision_matrix(params_list)
             self.state = self.evaluate_decision_matrix(matrix)
 
