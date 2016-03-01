@@ -5,7 +5,13 @@ import os
 
 import pygame
 
+from collections import OrderedDict
+
 from . import utils
+
+
+settings = {'Test': 1, 'Another Test': 0}
+sorted_settings = OrderedDict(sorted(settings.items(), key=lambda t: t[0]))
 
 
 class GUI(metaclass=utils.Singleton):
@@ -24,7 +30,7 @@ class GUI(metaclass=utils.Singleton):
         self.fonts = {}
         self.images = {}
         self.positions = {}  # image positions (Rect)
-        self.text = {}
+        self.settings = sorted_settings
         
         # font settings
         self.fonts['current_temperature'] = pygame.font.SysFont("monospace", 60)
@@ -39,6 +45,9 @@ class GUI(metaclass=utils.Singleton):
         self.images['back_button'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'back.png'))
         
         # image positions
+        self.positions['current_temperature'] = pygame.Rect(0.4*self.WIDTH, 0.4*self.HEIGHT, 128, 64)
+        self.positions['low_temp'] = pygame.Rect(0.1*self.WIDTH, 0.4*self.HEIGHT, 64, 64)
+        self.positions['high_temp'] = pygame.Rect(0.8*self.WIDTH, 0.4*self.HEIGHT, 64, 64)
         self.positions['low_temp_up'] = pygame.Rect(0.1*self.WIDTH, 0.1*self.HEIGHT, 64, 64)
         self.positions['low_temp_down'] = pygame.Rect(0.1*self.WIDTH, 0.7*self.HEIGHT, 64, 64)
         self.positions['high_temp_up'] = pygame.Rect(0.8*self.WIDTH, 0.1*self.HEIGHT, 64, 64)
@@ -47,18 +56,20 @@ class GUI(metaclass=utils.Singleton):
         self.positions['settings_title'] = pygame.Rect(0.32*self.WIDTH, 0, 1, 1)
         self.positions['back_button'] = pygame.Rect(0.35*self.WIDTH, 0.8*self.HEIGHT, 150, 35)
 
-        # text
-        self.text['current_temperature'] = self.fonts['current_temperature'].render("23C", 1, (255, 255, 0))
-        self.text['low_temp'] = None
-        self.text['high_temp'] = None
-
         # dummy values
         self.low_temp = 20
         self.high_temp = 25
 
-    def run(self):
+        self.run()
 
+    def run(self):
+        self.draw_home_screen()
+        pygame.display.flip()
+
+        # home screen
         while True:
+            self.draw_temperatures()
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
@@ -75,66 +86,65 @@ class GUI(metaclass=utils.Singleton):
                     elif self.positions['high_temp_down'].collidepoint(self.mouse_pos):
                         self.high_temp -= 1
 
-            # re-render text
-            self.text['low_temp'] = self.fonts['temperature_range'].render('{0}C'.format(self.low_temp), 1, (255, 255, 0))
-            self.text['high_temp'] = self.fonts['temperature_range'].render('{0}C'.format(self.high_temp), 1, (255, 255, 0))
-
-            # draw images
-            self.screen.fill(self.BACKGROUND_COLOUR)
-            self.screen.blit(self.images['up_arrow'], self.positions['low_temp_up'])
-            self.screen.blit(self.images['down_arrow'], self.positions['low_temp_down'])
-            self.screen.blit(self.images['up_arrow'], self.positions['high_temp_up'])
-            self.screen.blit(self.images['down_arrow'], self.positions['high_temp_down'])
-            self.screen.blit(self.images['settings_menu'], self.positions['settings_menu'])
-            
-            # draw text
-            self.screen.blit(self.text['current_temperature'], (0.4*self.WIDTH, 0.4*self.HEIGHT))
-            self.screen.blit(self.text['low_temp'], (0.1*self.WIDTH, 0.4*self.HEIGHT))
-            self.screen.blit(self.text['high_temp'], (0.8*self.WIDTH, 0.4*self.HEIGHT))
-            pygame.display.flip()
-
     def settings_view(self):
+        self.draw_settings_screen()
+        self.draw_settings_values()
+        pygame.display.flip()
 
         while True:
-            # draw settings menu
-            self.screen.fill(self.BACKGROUND_COLOUR)
-            self.screen.blit(self.images['settings_title'], self.positions['settings_title'])
-            self.screen.blit(self.images['back_button'], self.positions['back_button'])
-
-            # display settings menu options
-            self.screen.blit(self.fonts['settings'].render("Timezone", 1, (0, 0, 0)), (0.1*self.WIDTH, 0.2*self.HEIGHT))
-            self.screen.blit(self.fonts['settings'].render("City", 1, (0, 0, 0)), (0.1*self.WIDTH, 0.2*self.HEIGHT + 20))
-            self.screen.blit(self.fonts['settings'].render("Country", 1, (0, 0, 0)), (0.1*self.WIDTH, 0.2*self.HEIGHT + 40))
-            self.screen.blit(self.fonts['settings'].render("Temperature Unit", 1, (0, 0, 0)), (0.1*self.WIDTH, 0.2*self.HEIGHT + 60))
-            self.screen.blit(self.fonts['settings'].render("House Type", 1, (0, 0, 0)), (0.1*self.WIDTH, 0.2*self.HEIGHT + 80))
-            self.screen.blit(self.fonts['settings'].render("House Size", 1, (0, 0, 0)), (0.1*self.WIDTH, 0.2*self.HEIGHT + 100))
-            self.screen.blit(self.fonts['settings'].render("Temp. Low Range", 1, (0, 0, 0)), (0.1*self.WIDTH, 0.2*self.HEIGHT + 120))
-            self.screen.blit(self.fonts['settings'].render("Temp. High Range", 1, (0, 0, 0)), (0.1*self.WIDTH, 0.2*self.HEIGHT + 140))
-
-            # Assign variables
-            Timezone = "EST"
-            City = "Toronto"
-            Country = "Canada"
-            TemperatureUnit = "Celcius"
-            HouseType = "apartment"
-            HouseSize = "700"
-
-            # display variables
-            self.screen.blit(self.fonts['settings'].render(Timezone, 1, (0, 0, 0)), (0.6*self.WIDTH, 0.2*self.HEIGHT))
-            self.screen.blit(self.fonts['settings'].render(City, 1, (0, 0, 0)), (0.6*self.WIDTH, 0.2*self.HEIGHT + 20))
-            self.screen.blit(self.fonts['settings'].render(Country, 1, (0, 0, 0)), (0.6*self.WIDTH, 0.2*self.HEIGHT + 40))
-            self.screen.blit(self.fonts['settings'].render(TemperatureUnit, 1, (0, 0, 0)), (0.6*self.WIDTH, 0.2*self.HEIGHT + 60))
-            self.screen.blit(self.fonts['settings'].render(HouseType, 1, (0, 0, 0)), (0.6*self.WIDTH, 0.2*self.HEIGHT + 80))
-            self.screen.blit(self.fonts['settings'].render(HouseSize, 1, (0, 0, 0)), (0.6*self.WIDTH, 0.2*self.HEIGHT + 100))
-            self.screen.blit(self.fonts['settings'].render(str(self.low_temp), 1, (0, 0, 0)), (0.6*self.WIDTH, 0.2*self.HEIGHT + 120))
-            self.screen.blit(self.fonts['settings'].render(str(self.high_temp), 1, (0, 0, 0)), (0.6*self.WIDTH, 0.2*self.HEIGHT + 140))
-
-            pygame.display.flip()
-            # check for event
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
-                if event.type == pygame.MOUSEBUTTONUP:
+                elif event.type == pygame.MOUSEBUTTONUP:
                     self.mouse_pos = pygame.mouse.get_pos()
                     if self.positions['back_button'].collidepoint(self.mouse_pos):
+                        self.draw_home_screen()
+                        pygame.display.flip()
                         return
+
+    def draw_home_screen(self):
+        self.screen.fill(self.BACKGROUND_COLOUR)
+        self.screen.blit(self.images['up_arrow'], self.positions['low_temp_up'])
+        self.screen.blit(self.images['down_arrow'], self.positions['low_temp_down'])
+        self.screen.blit(self.images['up_arrow'], self.positions['high_temp_up'])
+        self.screen.blit(self.images['down_arrow'], self.positions['high_temp_down'])
+        self.screen.blit(self.images['settings_menu'], self.positions['settings_menu'])
+
+    def draw_temperatures(self, update=True):
+        # reset
+        pygame.draw.rect(self.screen, self.BACKGROUND_COLOUR, self.positions['current_temperature'])
+        pygame.draw.rect(self.screen, self.BACKGROUND_COLOUR, self.positions['low_temp'])
+        pygame.draw.rect(self.screen, self.BACKGROUND_COLOUR, self.positions['high_temp'])
+
+        # render text
+        current_temperature = self.fonts['current_temperature'].render("23C", 1, (255, 255, 0))
+        low_temp = self.fonts['temperature_range'].render('{0}C'.format(self.low_temp), 1, (255, 255, 0))
+        high_temp = self.fonts['temperature_range'].render('{0}C'.format(self.high_temp), 1, (255, 255, 0))
+
+        # draw text
+        self.screen.blit(current_temperature, self.positions['current_temperature'])
+        self.screen.blit(low_temp, self.positions['low_temp'])
+        self.screen.blit(high_temp, self.positions['high_temp'])
+
+        if update is True:
+            pygame.display.update([
+                self.positions['current_temperature'],
+                self.positions['low_temp'],
+                self.positions['high_temp'],
+            ])
+
+    def draw_settings_screen(self):
+        self.screen.fill(self.BACKGROUND_COLOUR)
+        self.screen.blit(self.images['settings_title'], self.positions['settings_title'])
+        self.screen.blit(self.images['back_button'], self.positions['back_button'])
+
+        # settings
+        for i, setting in enumerate(self.settings.keys()):
+            text = self.fonts['settings'].render(setting, 1, self.BLACK)
+            self.screen.blit(text, (0.1*self.WIDTH, (0.2*self.HEIGHT) + (i*20)))
+
+    def draw_settings_values(self):
+
+        for i, value in enumerate(self.settings.values()):
+            text = self.fonts['settings'].render(str(value), 1, self.BLACK)
+            self.screen.blit(text, (0.6*self.WIDTH, (0.2*self.HEIGHT) + (i*20)))
