@@ -5,9 +5,23 @@ var controllers = angular.module('titaniumControllers', [
 ]);
 
 controllers
-  .controller('LoginController', ['$scope',
-    function($scope) {
-      // login page
+  .controller('LoginController', ['$scope', '$rootScope', '$location', 'LoginService',
+    function($scope, $rootScope, $location, LoginService) {
+      // check if already logged in
+      if($rootScope.currentUser) {
+        $location.path('/dashboard');
+      }
+
+      $scope.submit = function submit(user) {
+        LoginService.authenticate(user.email, user.password)
+          .then(function success() {
+            console.log('login successful');
+            $rootScope.currentUser = angular.copy($scope.user);
+            $location.path('/dashboard');
+          }, function error() {
+            console.log('login failed');
+          });
+      }
     }
   ]);
 

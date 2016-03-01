@@ -25,4 +25,13 @@ app
 
       $locationProvider.html5Mode(true);
     }
-  ]);
+  ])
+  .run(function($rootScope, $location) {
+    $rootScope.$on('$routeChangeStart', function(event, next, current) {
+      if(!$rootScope.currentUser) {
+        if(next.templateUrl !== 'views/login.html') {
+          $location.path('/login');
+        }
+      }
+    });
+  });
