@@ -11,7 +11,6 @@ def main():
     logger = utils.init_logging()
     utils.init_context()
 
-    gui = None
     t = Thermostat()
 
     # get and set current temperature
@@ -29,11 +28,11 @@ def main():
     except errors.TemperatureValidationError as e:
         logger.error(e)
     else:
+        gui = GUI(t)
         try:
-            gui = GUI(t)
+            gui.run()
         finally:
-            if gui:
-                gui.stop()
+            gui.stop()
 
 
 if __name__ == "__main__":

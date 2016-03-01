@@ -64,7 +64,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
     def __init__(self):
         super().__init__()
-        self._settings = OrderedDict(utils.init_settings().items(), key=lambda t: t[0])
+        self._settings = OrderedDict(sorted(utils.init_settings().items(), key=lambda t: t[0]))
         self._history = utils.init_history()
         self._current_temperature = Decimal(0)
         self._temperature_range = (Decimal(0), Decimal(0))

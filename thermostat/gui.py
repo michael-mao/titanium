@@ -24,26 +24,26 @@ class GUI(metaclass=utils.Singleton):
 
     def __init__(self, t):
         pygame.init()
-        self.screen = pygame.display.set_mode(self.SIZE)
+        self.screen = None
         self.mouse_pos = (0, 0)  # mouse coordinates
         self.fonts = {}
         self.images = {}
         self.positions = {}  # image positions (Rect)
         self.thermostat = t
         self.logger = getLogger('app.gui')
-        
+
         # font settings
         self.fonts['current_temperature'] = pygame.font.SysFont(self.DEFAULT_FONT, 60)
         self.fonts['temperature_range'] = pygame.font.SysFont(self.DEFAULT_FONT, 30)
         self.fonts['settings'] = pygame.font.SysFont(self.DEFAULT_FONT, 20)
-        
+
         # load images
         self.images['up_arrow'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'arrowUp.png'))
         self.images['down_arrow'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'arrowDown.png'))
         self.images['settings_menu'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'gear.png'))
         self.images['settings_title'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'SettingsHeader.png'))
         self.images['back_button'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'back.png'))
-        
+
         # image positions
         self.positions['current_temperature'] = pygame.Rect(0.4*self.WIDTH, 0.4*self.HEIGHT, 128, 64)
         self.positions['low_temp'] = pygame.Rect(0.1*self.WIDTH, 0.4*self.HEIGHT, 64, 64)
@@ -56,11 +56,11 @@ class GUI(metaclass=utils.Singleton):
         self.positions['settings_title'] = pygame.Rect(0.32*self.WIDTH, 0, 1, 1)
         self.positions['back_button'] = pygame.Rect(0.35*self.WIDTH, 0.8*self.HEIGHT, 150, 35)
 
-        self.run()
-
     def run(self):
         self.thermostat.start()
 
+        # create window
+        self.screen = pygame.display.set_mode(self.SIZE)
         self.draw_home_screen()
         pygame.display.flip()
 
@@ -91,6 +91,7 @@ class GUI(metaclass=utils.Singleton):
                             self.thermostat.temperature_range = (low, high - 1)
                     except errors.TemperatureValidationError as e:
                         self.logger.debug(e)
+                        # TODO: show error message
 
     def stop(self, shutdown=False):
         # TODO: safely terminate thread
