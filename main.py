@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 from thermostat.thermostat import Thermostat
+from thermostat.gui import GUI
 from thermostat import errors, utils
 
 
@@ -10,6 +11,7 @@ def main():
     logger = utils.init_logging()
     utils.init_context()
 
+    gui = None
     t = Thermostat()
 
     # get and set current temperature
@@ -28,9 +30,10 @@ def main():
         logger.error(e)
     else:
         try:
-            t.run()
+            gui = GUI(t)
         finally:
-            t.stop()
+            if gui:
+                gui.stop()
 
 
 if __name__ == "__main__":

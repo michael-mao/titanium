@@ -8,6 +8,7 @@ from logging import getLogger
 from functools import reduce
 from enum import Enum, unique
 from decimal import Decimal
+from collections import OrderedDict
 
 from . import errors, utils, weather, sensor, sql
 
@@ -33,7 +34,7 @@ class WeekDay(Enum):
     sunday = 6
 
 
-class Thermostat(metaclass=utils.Singleton):
+class Thermostat(threading.Thread, metaclass=utils.Singleton):
     """ Main class.
 
     Contains decision making algorithm. Gathers all available input and data from sources.
@@ -62,7 +63,8 @@ class Thermostat(metaclass=utils.Singleton):
     }
 
     def __init__(self):
-        self._settings = utils.init_settings()
+        super().__init__()
+        self._settings = OrderedDict(utils.init_settings().items(), key=lambda t: t[0])
         self._history = utils.init_history()
         self._current_temperature = Decimal(0)
         self._temperature_range = (Decimal(0), Decimal(0))
@@ -71,7 +73,7 @@ class Thermostat(metaclass=utils.Singleton):
         self.update_interval = 5
         self.state = State.OFF
         self.logger = getLogger('app.thermostat')
-        self.cost_table = sql.CostTable()
+        self.cost_table = None  # must init after thread starts
         self.weather_thread = weather.WeatherAPI(
             self._settings['temperature_unit'],
             self._settings['city'],
@@ -80,12 +82,19 @@ class Thermostat(metaclass=utils.Singleton):
         # TODO: actively record user actions (input range, changes after prediction)
         self.history_thread = threading.Timer(600, self.set_history)
         self.history_thread.daemon = True
+        self.locks = {
+            'settings': threading.Lock(),
+            'temperature_range': threading.Lock(),
+        }
 
     def run(self):
         """ Entry method.
 
         Main event loop is here.
         """
+        # initialize db
+        self.cost_table = sql.CostTable()
+
         # initialize sensor
         if self.on_rpi:
             sensor.init_sensor()
@@ -302,6 +311,17 @@ class Thermostat(metaclass=utils.Singleton):
         return self.state != State.OFF
 
     @property
+    def settings(self):
+        return self._settings
+
+    @settings.setter
+    def settings(self, t):
+        self.locks['settings'].acquire(False)
+        key, value = t
+        self._settings[key] = value
+        self.locks['settings'].release()
+
+    @property
     def current_temperature(self):
         return self._current_temperature
 
@@ -315,12 +335,16 @@ class Thermostat(metaclass=utils.Singleton):
 
     @temperature_range.setter
     def temperature_range(self, t_range):
-        low, high = t_range
-        if high < low:
-            raise errors.TemperatureValidationError('Invalid range.')
-        self.validate_temperature(low)
-        self.validate_temperature(high)
-        self._temperature_range = t_range
+        self.locks['temperature_range'].acquire(False)
+        try:
+            low, high = t_range
+            if high < low:
+                raise errors.TemperatureValidationError('Invalid range.')
+            self.validate_temperature(low)
+            self.validate_temperature(high)
+            self._temperature_range = t_range
+        finally:
+            self.locks['temperature_range'].release()
 
     @property
     def temperature_range_floor(self):
