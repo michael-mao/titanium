@@ -1,0 +1,19 @@
+{
+  "name": "titanium",
+  "version": "0.0.1",
+  "authors": [
+    "Michael Mao <michael340@gmail.com>"
+  ],
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components"
+  ],
+  "dependencies": {
+    "angular": "1.5.0",
+    "angular-route": "~1.5.0",
+    "angular-bootstrap": "1.2.1",
+    "bootstrap": "3.3.6"
+  }
+}
