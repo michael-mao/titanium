@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 from thermostat.thermostat import Thermostat
+from thermostat.gui import GUI
 from thermostat import errors, utils
 
 
@@ -27,10 +28,11 @@ def main():
     except errors.TemperatureValidationError as e:
         logger.error(e)
     else:
+        gui = GUI(t)
         try:
-            t.run()
+            gui.run()
         finally:
-            t.stop()
+            gui.stop()
 
 
 if __name__ == "__main__":
