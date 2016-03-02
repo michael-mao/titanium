@@ -26,8 +26,11 @@ controllers
   ]);
 
 controllers
-  .controller('DashboardController', ['$scope',
-    function($scope) {
-      // dashboard page
+  .controller('DashboardController', ['$scope', '$location',
+    function($scope, $location) {
+
+      $scope.logout = function logout() {
+        $location.path('/login');
+      };
     }
   ]);

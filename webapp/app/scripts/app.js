@@ -30,7 +30,7 @@ app
     $rootScope.$on('$routeChangeStart', function(event, next, current) {
       if(!$rootScope.currentUser) {
         if(next.templateUrl !== 'views/login.html') {
-          $location.path('/login');
+          //$location.path('/login');
         }
       }
     });
