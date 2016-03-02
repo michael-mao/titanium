@@ -10,6 +10,15 @@ var app = angular.module('titanium', [
 ]);
 
 app
+  .constant('config', {
+    MIN_TEMPERATURE: 0,
+    MAX_TEMPERATURE: 35,
+
+    PUBLISH_KEY: 'pub-c-5d83a3da-ce33-4b35-889e-85d5f3e1be17',
+    SUBSCRIBE_KEY: 'sub-c-470a1dd4-e027-11e5-bd77-02ee2ddab7fe',
+    CHANNEL_NAME: 'control',
+    THERMOSTAT_ID: 'thermostat'
+  })
   .config(['$routeProvider', '$locationProvider',
     function($routeProvider, $locationProvider) {
       $routeProvider
@@ -28,12 +37,12 @@ app
       $locationProvider.html5Mode(true);
     }
   ])
-  .run(['$rootScope', '$location', 'Pubnub',
-    function($rootScope, $location, Pubnub) {
+  .run(['$rootScope', '$location', 'config', 'Pubnub',
+    function($rootScope, $location, config, Pubnub) {
       // TODO: put into config file
       Pubnub.init({
-        publish_key: 'pub-c-5d83a3da-ce33-4b35-889e-85d5f3e1be17',
-        subscribe_key: 'sub-c-470a1dd4-e027-11e5-bd77-02ee2ddab7fe'
+        publish_key: config.PUBLISH_KEY,
+        subscribe_key: config.SUBSCRIBE_KEY
       });
 
       $rootScope.$on('$routeChangeStart', function(event, next, current) {

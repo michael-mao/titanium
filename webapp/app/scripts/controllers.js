@@ -27,8 +27,8 @@ controllers
   ]);
 
 controllers
-  .controller('DashboardController', ['$scope', '$location', '$interval', 'UserService', 'ControlService',
-    function($scope, $location, $interval, UserService, ControlService) {
+  .controller('DashboardController', ['$scope', '$location', '$interval', 'config', 'UserService', 'ControlService',
+    function($scope, $location, $interval, config, UserService, ControlService) {
       var temperaturePoll = $interval(function() {
         if($scope.thermostatOnline) {
           ControlService.requestTemperatures();
@@ -41,7 +41,7 @@ controllers
         unit: 'C',
         barWidth: 40,
         trackColor: 'rgba(255,0,0,.1)',
-        max: 35,
+        max: config.MAX_TEMPERATURE,
         readOnly: true,
         dynamicOptions: true
       };
@@ -51,7 +51,7 @@ controllers
           type: 'dots',
           color: 'rgba(255,0,0,.2)',
           width: 2,
-          quantity: 35,
+          quantity: config.MAX_TEMPERATURE,
           spaceWidth: 10
         },
         unit: 'C',
@@ -59,7 +59,7 @@ controllers
         trackWidth: 25,
         trackColor: 'rgba(0,0,0,.1)',
         prevBarColor: 'rgba(0,0,0,.2)',
-        max: 35,
+        max: config.MAX_TEMPERATURE,
         displayPrevious: true,
         dynamicOptions: true
       };

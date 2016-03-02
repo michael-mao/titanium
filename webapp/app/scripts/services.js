@@ -19,10 +19,8 @@ services
   });
 
 services
-  .factory('ControlService', function($q, Pubnub) {
+  .factory('ControlService', function($q, config, Pubnub) {
     var service = {};
-    var channel_name = 'control';
-    var thermostat_id = 'thermostat';
 
     service.temperatures = {
       'current_temperature': 0,
@@ -50,7 +48,7 @@ services
     service.connect = function connect() {
       var deferred = $q.defer();
       Pubnub.subscribe({
-        channel: channel_name,
+        channel: config.CHANNEL_NAME,
         message: service.parseMessage,
         connect: deferred.resolve,
         error: deferred.reject
@@ -61,16 +59,16 @@ services
 
     service.disconnect = function disconnect() {
       Pubnub.unsubscribe({
-        channel: channel_name
+        channel: config.CHANNEL_NAME
       });
     };
 
     service.thermostatOnline = function thermostatOnline() {
       var deferred = $q.defer();
       Pubnub.here_now({
-        channel: channel_name,
+        channel: config.CHANNEL_NAME,
         callback: function(m) {
-          deferred.resolve(m.uuids.indexOf(thermostat_id) > -1);
+          deferred.resolve(m.uuids.indexOf(config.THERMOSTAT_ID) > -1);
         },
         error: deferred.reject
       });
@@ -83,7 +81,7 @@ services
         action: 'request_temperatures'
       };
       Pubnub.publish({
-        channel: channel_name,
+        channel: config.CHANNEL_NAME,
         message: data
       });
     };
