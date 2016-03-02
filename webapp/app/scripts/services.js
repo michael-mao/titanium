@@ -25,15 +25,17 @@ services
     var thermostat_id = 'thermostat';
 
     service.connect = function connect() {
+      var deferred = $q.defer();
       Pubnub.subscribe({
         channel: channel_name,
         message: function(m) {
           console.log(m);
         },
-        error: function(e) {
-          console.log(e)
-        }
+        connect: deferred.resolve,
+        error: deferred.reject
       });
+
+      return deferred.promise;
     };
 
     service.disconnect = function disconnect() {

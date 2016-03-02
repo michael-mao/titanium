@@ -37,9 +37,25 @@
 
     <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 dashboard-main">
         <h1 class="page-header">Dashboard</h1>
-        <div class="row">
-            <p ng-show="thermostatOnline">Thermostat is ONLINE</p>
-            <p ng-show="!thermostatOnline">Thermostat is OFFLINE</p>
+        <div class="row text-center">
+            <div class="alert alert-success" ng-show="thermostatOnline">Thermostat is <strong>ONLINE</strong></div>
+            <div class="alert alert-danger" ng-show="!thermostatOnline">Thermostat is <strong>OFFLINE</strong></div>
+        </div>
+        <div class="row text-center dashboard-temperatures">
+            <div class="col-md-4">
+                <ui-knob value="temperatureLow" options="trKnobOptions"></ui-knob>
+                <h4>Low</h4>
+                <span class="text-muted">Spin to adjust</span>
+            </div>
+            <div class="col-md-4">
+                <ui-knob value="currentTemperature" options="ctKnobOptions"></ui-knob>
+                <h4>Current Temperature</h4>
+            </div>
+            <div class="col-md-4">
+                <ui-knob value="temperatureHigh" options="trKnobOptions"></ui-knob>
+                <h4>High</h4>
+                <span class="text-muted">Spin to adjust</span>
+            </div>
         </div>
 
         <h2 class="sub-header">Settings</h2>

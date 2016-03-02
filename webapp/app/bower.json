@@ -16,6 +16,8 @@
     "angular-bootstrap": "1.2.1",
     "bootstrap": "3.3.6",
     "pubnub": "3.14.0",
-    "pubnub-angular": "3.1.1"
+    "pubnub-angular": "3.1.1",
+    "ng-knob": "0.1.2",
+    "d3": "3.5.16"
   }
 }

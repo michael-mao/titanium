@@ -1,7 +1,8 @@
 'use strict';
 
 var controllers = angular.module('titaniumControllers', [
-  'ui.bootstrap'
+  'ui.bootstrap',
+  'ui.knob'
 ]);
 
 controllers
@@ -28,8 +29,51 @@ controllers
 controllers
   .controller('DashboardController', ['$scope', '$location', 'UserService', 'ControlService',
     function($scope, $location, UserService, ControlService) {
-      ControlService.connect();
-      ControlService.thermostatOnline()
+      $scope.currentTemperature = 22;
+      $scope.temperatureLow = 18;
+      $scope.temperatureHigh = 24;
+      $scope.ctKnobOptions = {
+        size: 200,
+        unit: 'C',
+        barWidth: 40,
+        trackColor: 'rgba(255,0,0,.1)',
+        max: 35,
+        readOnly: true,
+        dynamicOptions: true
+      };
+      $scope.trKnobOptions = {
+        scale: {
+          enabled: true,
+          type: 'dots',
+          color: 'rgba(255,0,0,.2)',
+          width: 2,
+          quantity: 35,
+          spaceWidth: 10
+        },
+        unit: 'C',
+        barWidth: 40,
+        trackWidth: 25,
+        trackColor: 'rgba(0,0,0,.1)',
+        prevBarColor: 'rgba(0,0,0,.2)',
+        max: 35,
+        displayPrevious: true,
+        dynamicOptions: true
+      };
+
+      $scope.$watch('temperatureLow', function(value) {
+        if(value > $scope.temperatureHigh) {
+          $scope.temperatureLow = $scope.temperatureHigh;
+        }
+      });
+
+      $scope.$watch('temperatureHigh', function(value) {
+        if(value < $scope.temperatureLow) {
+          $scope.temperatureHigh = $scope.temperatureLow;
+        }
+      });
+
+      ControlService.connect()
+        .then(ControlService.thermostatOnline)
         .then(function success(isOnline) {
           $scope.thermostatOnline = isOnline;
         });

@@ -75,6 +75,11 @@ body {
   margin-top: 0;
 }
 
+.dashboard-temperatures {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
 /*
  * Other
  */
