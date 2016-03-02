@@ -10,7 +10,9 @@ from enum import Enum, unique
 from decimal import Decimal
 from collections import OrderedDict
 
-from . import errors, utils, weather, sensor, sql
+from pubnub import Pubnub
+
+from . import errors, utils, weather, sensor, sql, config
 
 
 @unique
@@ -74,6 +76,11 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.state = State.OFF
         self.logger = getLogger('app.thermostat')
         self.cost_table = None  # must init after thread starts
+        self.pubnub = Pubnub(
+            publish_key=config.PUBLISH_KEY,
+            subscribe_key=config.SUBSCRIBE_KEY,
+            uuid=config.THERMOSTAT_ID,
+        )
         self.weather_thread = weather.WeatherAPI(
             self._settings['temperature_unit'],
             self._settings['city'],
@@ -105,6 +112,13 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
         # start daemon thread to record history data
         self.history_thread.start()
+
+        # subscribe to remote access messages
+        self.pubnub.subscribe(
+            channels=config.CHANNEL_NAME,
+            callback=self._callback,
+            error=self._error,
+        )
 
         while True:
             self.update_state()
@@ -295,6 +309,34 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         time_block = rounded_dt.strftime('%H:%M')
         self._history[day][time_block] = str(temperature)  # store as str to avoid conversion to JSON float
 
+    def _callback(self, message, channel):
+        self.logger.debug(message)
+
+        if message['action'] == 'request_temperatures':
+            data = {
+                'action': 'temperature_data',
+                'data': {
+                    'current_temperature': round(self.current_temperature),
+                    'temperature_low': round(self.temperature_range_floor),
+                    'temperature_high': round(self.temperature_range_ceiling),
+                }
+            }
+            self.pubnub.publish(config.CHANNEL_NAME, data, error=self._error)
+            self.logger.debug('published message: {0}'.format(data))
+        elif message['action'] == 'request_settings':
+            data = {
+                'action': 'setting_data',
+                'data': self.settings
+            }
+            self.pubnub.publish(config.CHANNEL_NAME, data, error=self._error)
+        elif message['action'] == 'update_temperature_range':
+            self.temperature_range = (Decimal(message['temperature_low']), Decimal('temperature_high'))
+        elif message['action'] == 'update_setting':
+            self.settings = (message['setting_name'], message['setting_value'])
+
+    def _error(self, message):
+        self.logger.error(message)
+
     @classmethod
     def validate_temperature(cls, value):
         if value < cls.MIN_TEMPERATURE:
@@ -316,6 +358,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
     @settings.setter
     def settings(self, t):
+        # TODO: validation
         self.locks['settings'].acquire(False)
         key, value = t
         self._settings[key] = value

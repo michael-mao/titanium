@@ -24,13 +24,34 @@ services
     var channel_name = 'control';
     var thermostat_id = 'thermostat';
 
+    service.temperatures = {
+      'current_temperature': 0,
+      'temperature_low': 0,
+      'temperature_high': 0
+    };
+    service.settings = {};
+
+    service.parseMessage = function parseMessage(message) {
+      if(message.action == 'temperature_data') {
+        // only initialize range
+        if(!service.temperatures['temperature_low'] && !service.temperatures['temperature_high']) {
+          angular.extend(service.temperatures, message.data);
+        } else {
+          service.temperatures['current_temperature'] = message.data['current_temperature'];
+        }
+      } else if(message.action == 'settings_data') {
+        service.extend(service.settings, message.data);
+      } else {
+        // unexpected message type
+        console.log(message);
+      }
+    };
+
     service.connect = function connect() {
       var deferred = $q.defer();
       Pubnub.subscribe({
         channel: channel_name,
-        message: function(m) {
-          console.log(m);
-        },
+        message: service.parseMessage,
         connect: deferred.resolve,
         error: deferred.reject
       });
@@ -55,6 +76,16 @@ services
       });
 
       return deferred.promise;
+    };
+
+    service.requestTemperatures = function requestTemperatures() {
+      var data = {
+        action: 'request_temperatures'
+      };
+      Pubnub.publish({
+        channel: channel_name,
+        message: data
+      });
     };
 
     return service;

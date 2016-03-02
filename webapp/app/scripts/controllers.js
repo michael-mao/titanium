@@ -27,11 +27,15 @@ controllers
   ]);
 
 controllers
-  .controller('DashboardController', ['$scope', '$location', 'UserService', 'ControlService',
-    function($scope, $location, UserService, ControlService) {
-      $scope.currentTemperature = 22;
-      $scope.temperatureLow = 18;
-      $scope.temperatureHigh = 24;
+  .controller('DashboardController', ['$scope', '$location', '$interval', 'UserService', 'ControlService',
+    function($scope, $location, $interval, UserService, ControlService) {
+      var temperaturePoll = $interval(function() {
+        if($scope.thermostatOnline) {
+          ControlService.requestTemperatures();
+        }
+      }, 30000); // 30s;
+      $scope.thermostatOnline = false;
+      $scope.temperatures = ControlService.temperatures;
       $scope.ctKnobOptions = {
         size: 200,
         unit: 'C',
@@ -60,15 +64,19 @@ controllers
         dynamicOptions: true
       };
 
-      $scope.$watch('temperatureLow', function(value) {
-        if(value > $scope.temperatureHigh) {
-          $scope.temperatureLow = $scope.temperatureHigh;
+      $scope.$on('$destroy', function() {
+        $interval.cancel(temperaturePoll);
+      });
+
+      $scope.$watch('temperatures.temperature_low', function(value) {
+        if(value > $scope.temperatures['temperature_high']) {
+          $scope.temperatures['temperature_low'] = $scope.temperatures['temperature_high'];
         }
       });
 
-      $scope.$watch('temperatureHigh', function(value) {
-        if(value < $scope.temperatureLow) {
-          $scope.temperatureHigh = $scope.temperatureLow;
+      $scope.$watch('temperatures.temperature_high', function(value) {
+        if(value < $scope.temperatures['temperature_low']) {
+          $scope.temperatures['temperature_high'] = $scope.temperatures['temperature_low'];
         }
       });
 
@@ -76,6 +84,7 @@ controllers
         .then(ControlService.thermostatOnline)
         .then(function success(isOnline) {
           $scope.thermostatOnline = isOnline;
+          ControlService.requestTemperatures();
         });
 
       $scope.logout = function logout() {
