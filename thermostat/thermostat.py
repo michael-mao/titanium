@@ -5,35 +5,12 @@ import datetime
 import threading
 
 from logging import getLogger
-from functools import reduce
-from enum import Enum, unique
 from decimal import Decimal
 from collections import OrderedDict
 
 from pubnub import Pubnub
 
-from . import errors, utils, weather, sensor, sql, config
-
-
-@unique
-class State(Enum):
-    OFF = 0
-    HEAT = 1
-    COOL = 2
-
-    def __str__(self):
-        return self.name
-
-
-@unique
-class WeekDay(Enum):
-    monday = 0
-    tuesday = 1
-    wednesday = 2
-    thursday = 3
-    friday = 4
-    saturday = 5
-    sunday = 6
+from . import errors, utils, weather, sensor, sql, config, decision
 
 
 class Thermostat(threading.Thread, metaclass=utils.Singleton):
@@ -46,23 +23,8 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
     Notes:
         - All floating point arithmetic should use Decimal type, pass in number as str to maintain precision
     """
-    # bounds for input range
-    MIN_TEMPERATURE = 0
-    MAX_TEMPERATURE = 35
 
-    # decision matrix thresholds, within range(-1, 1)
-    # -1              COOL_THRESHOLD      HEAT_THRESHOLD          1
-    # --------COOL--------|--------OFF--------|--------HEAT--------
-    DM_HEAT_THRESHOLD = Decimal('0.5')
-    DM_COOL_THRESHOLD = Decimal('-0.5')
-
-    # decision matrix parameters and their weighting, weightings must sum to 1
-    DM_WEIGHTINGS = {
-        'internal_temperature': Decimal('0.4'),
-        'external_temperature': Decimal('0.2'),
-        'history_temperature': Decimal('0.2'),
-        'energy_cost': Decimal('0.2'),
-    }
+    UPDATE_INTERVAL = 5
 
     def __init__(self):
         super().__init__()
@@ -72,8 +34,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self._temperature_range = (Decimal(0), Decimal(0))
         self._on_rpi = utils.on_rpi()
         self.temperature_increment = Decimal('0.5')
-        self.update_interval = 5
-        self.state = State.OFF
+        self.state = utils.State.OFF
         self.logger = getLogger('app.thermostat')
         self.cost_table = None  # must init after thread starts
         self.pubnub = Pubnub(
@@ -122,15 +83,15 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
         while True:
             self.update_state()
-            time.sleep(self.update_interval)
+            time.sleep(self.UPDATE_INTERVAL)
 
     def stop(self):
         """ Exit handler.
 
         Write data stored in memory back to files.
         """
-        utils.write_to_file(utils.SETTINGS_FILENAME, self._settings)
-        utils.write_to_file(utils.HISTORY_FILENAME, self._history)
+        utils.write_to_file(config.SETTINGS_FILENAME, self._settings)
+        utils.write_to_file(config.HISTORY_FILENAME, self._history)
         self.cost_table.close()
         self.logger.info('cleanup completed')
 
@@ -145,107 +106,52 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
         low, high = self.temperature_range
         if self.current_temperature < (low - self.temperature_increment):
-            self.state = State.HEAT
+            self.state = utils.State.HEAT
         elif self.current_temperature > (high + self.temperature_increment):
-            self.state = State.COOL
+            self.state = utils.State.COOL
         else:
-            # within range, build and evaluate decision matrix
-            params_list = list()
-
-            # TODO: likely needs an additional multiplier to amplify difference
-            # TODO: score is always max when this is the only parameter in DM
-            rating = self.temperature_range_equilibrium - self.current_temperature
-            params_list.append(('internal_temperature', rating))
-
-            # use external temperature if the data is recent
-            # TODO: factor in external humidity
-            if (datetime.datetime.now() - self.weather_thread.last_updated).total_seconds() < 3600:
-                rating = self.temperature_range_ceiling - self.weather_thread.temperature
-                params_list.append(('external_temperature', rating))
-
-            # use history if the data exists
-            past_temperature = self.get_history()
-            if past_temperature is not None:
-                rating = past_temperature - self.current_temperature
-                params_list.append(('history_temperature', rating))
-
-            # use energy cost if data exists
-            cost_data = self.cost_table.select(
-                select='start_time,cost',
-                where={'country_code': self._settings['country_code'], 'city': self._settings['city']}
-            )
-            if cost_data:
-                cost_data = dict(cost_data)
-                lowest_cost = min(cost_data.values())
-                current_hour = utils.round_time(datetime.datetime.now(), 3600).hour
-                current_cost = cost_data.get(current_hour)
-                if current_cost is not None:
-                    ratio = Decimal(lowest_cost) / Decimal(current_cost)
-                    rating = ratio * params_list[0][1]  # ratio * (internal temperature rating)
-                    params_list.append(('energy_cost', rating))
-
-            matrix = self.build_decision_matrix(params_list)
-            self.state = self.evaluate_decision_matrix(matrix)
+            # within range, make decision
+            self.state = self.make_decision()
 
         self.logger.debug('thermostat state updated to {0}'.format(self.state))
 
-    def build_decision_matrix(self, params_list):
-        """ Creates decision matrix data structure.
+    def make_decision(self):
+        params_list = list()
 
-        Matches passed in parameter and rating tuple to the respective weighting in DM_WEIGHTINGS.
-        Parameters that do not exist in DM_WEIGHTINGS are ignored. Conversely, if no matching tuple is passed in for
-        a key in DM_WEIGHTINGS, it will not be included in the final matrix (other parameter weightings will be
-        recalculated accordingly).
+        # TODO: likely needs an additional multiplier to amplify difference
+        # TODO: score is always max when this is the only parameter in DM
+        rating = self.temperature_range_equilibrium - self.current_temperature
+        params_list.append(('internal_temperature', rating))
 
-        :param params_list: list of tuples, (parameter_name, rating)
-            - parameter_name must match a key in DM_WEIGHTINGS
-        :return: decision matrix, dictionary of the form { parameter: (weight, rating), ... }
-        """
-        matrix = {}
-        total_weight = Decimal(0)
-        for parameter, rating in params_list:
-            weight = self.DM_WEIGHTINGS.get(parameter)
-            if weight is not None:
-                matrix[parameter] = (weight, rating)
-                total_weight += weight
-            self.logger.debug('parameter {0} has weight {1} and rating {2}'.format(parameter, weight, rating))
+        # use external temperature if the data is recent
+        # TODO: factor in external humidity
+        if (datetime.datetime.now() - self.weather_thread.last_updated).total_seconds() < 3600:
+            rating = self.temperature_range_ceiling - self.weather_thread.temperature
+            params_list.append(('external_temperature', rating))
 
-        # if there are missing parameter ratings, recalculate weightings
-        if len(matrix) != len(self.DM_WEIGHTINGS):
-            for key, value in matrix.items():
-                weight, rating = value
-                matrix[key] = (weight/total_weight, rating)
-                self.logger.debug('parameter {0} has recalculated weight, rating {1}'.format(key, matrix[key]))
+        # use history if the data exists
+        past_temperature = self.get_history()
+        if past_temperature is not None:
+            rating = past_temperature - self.current_temperature
+            params_list.append(('history_temperature', rating))
 
-        return matrix
+        # use energy cost if data exists
+        cost_data = self.cost_table.select(
+            select='start_time,cost',
+            where={'country_code': self._settings['country_code'], 'city': self._settings['city']}
+        )
+        if cost_data:
+            cost_data = dict(cost_data)
+            lowest_cost = min(cost_data.values())
+            current_hour = utils.round_time(datetime.datetime.now(), 3600).hour
+            current_cost = cost_data.get(current_hour)
+            if current_cost is not None:
+                ratio = Decimal(lowest_cost) / Decimal(current_cost)
+                rating = ratio * params_list[0][1]  # ratio * (internal temperature rating)
+                params_list.append(('energy_cost', rating))
 
-    def evaluate_decision_matrix(self, matrix):
-        """ Evaluates decision matrix.
-
-        Calculates the total score based on weighting and rating of each parameter.
-        Determines new thermostat state based on total score and preset thresholds.
-
-        Normalizes ratings to be within range(-1, 1) before multiplying weight.
-
-        :param matrix: decision matrix
-        :return: new thermostat state
-        """
-        total_score = Decimal(0)
-        total_rating = reduce(lambda x, y: x+y, [value[1] for value in matrix.values()])
-
-        for key, value in matrix.items():
-            score = reduce(lambda weight, rating: weight*(rating/total_rating), value)
-            total_score += score
-        self.logger.debug('total rating is {0}'.format(total_rating))
-        self.logger.debug('total score is {0}'.format(total_score))
-
-        new_state = State.OFF
-        if total_score > self.DM_HEAT_THRESHOLD:
-            new_state = State.HEAT
-        elif total_score < self.DM_COOL_THRESHOLD:
-            new_state = State.COOL
-
-        return new_state
+        matrix = decision.build_decision_matrix(params_list)
+        return decision.evaluate_decision_matrix(matrix)
 
     def get_setting(self, name):
         """ Get setting value.
@@ -280,7 +186,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             return None
 
         rounded_dt = utils.round_time(dt)
-        day = WeekDay(rounded_dt.weekday()).name
+        day = utils.WeekDay(rounded_dt.weekday()).name
         time_block = rounded_dt.strftime('%H:%M')
         temperature = self._history[day][time_block]
         return Decimal(temperature) if temperature is not None else None
@@ -305,11 +211,17 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             return None
 
         rounded_dt = utils.round_time(dt)
-        day = WeekDay(rounded_dt.weekday()).name
+        day = utils.WeekDay(rounded_dt.weekday()).name
         time_block = rounded_dt.strftime('%H:%M')
         self._history[day][time_block] = str(temperature)  # store as str to avoid conversion to JSON float
 
     def _callback(self, message, channel):
+        """ Pubnub message callback.
+
+        :param message: received payload
+        :param channel: channel name
+        :return: None
+        """
         self.logger.debug(message)
 
         if message['action'] == 'request_temperatures':
@@ -335,14 +247,19 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             self.settings = (message['setting_name'], message['setting_value'])
 
     def _error(self, message):
+        """ Pubnub error callback.
+
+        :param message:
+        :return: None
+        """
         self.logger.error(message)
 
-    @classmethod
-    def validate_temperature(cls, value):
-        if value < cls.MIN_TEMPERATURE:
-            raise errors.TemperatureValidationError('Temperature cannot be below {}'.format(cls.MIN_TEMPERATURE))
-        if value > cls.MAX_TEMPERATURE:
-            raise errors.TemperatureValidationError('Temperature cannot be above {}'.format(cls.MAX_TEMPERATURE))
+    @staticmethod
+    def validate_temperature(value):
+        if value < config.MIN_TEMPERATURE:
+            raise errors.TemperatureValidationError('Temperature cannot be below {}'.format(config.MIN_TEMPERATURE))
+        if value > config.MAX_TEMPERATURE:
+            raise errors.TemperatureValidationError('Temperature cannot be above {}'.format(config.MAX_TEMPERATURE))
 
     @property
     def on_rpi(self):
@@ -350,7 +267,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
     @property
     def is_active(self):
-        return self.state != State.OFF
+        return self.state != utils.State.OFF
 
     @property
     def settings(self):

@@ -7,12 +7,10 @@ import pygame
 
 from logging import getLogger
 
-from . import utils, errors
+from . import utils, errors, config
 
 
 class GUI(metaclass=utils.Singleton):
-
-    ASSETS_DIR = os.path.join(utils.BASE_DIR, 'assets')
 
     WIDTH = 480
     HEIGHT = 320
@@ -38,11 +36,11 @@ class GUI(metaclass=utils.Singleton):
         self.fonts['settings'] = pygame.font.SysFont(self.DEFAULT_FONT, 20)
 
         # load images
-        self.images['up_arrow'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'arrowUp.png'))
-        self.images['down_arrow'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'arrowDown.png'))
-        self.images['settings_menu'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'gear.png'))
-        self.images['settings_title'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'SettingsHeader.png'))
-        self.images['back_button'] = pygame.image.load(os.path.join(self.ASSETS_DIR, 'back.png'))
+        self.images['up_arrow'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'arrowUp.png'))
+        self.images['down_arrow'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'arrowDown.png'))
+        self.images['settings_menu'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'gear.png'))
+        self.images['settings_title'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'SettingsHeader.png'))
+        self.images['back_button'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'back.png'))
 
         # image positions
         self.positions['current_temperature'] = pygame.Rect(0.4*self.WIDTH, 0.4*self.HEIGHT, 128, 64)
