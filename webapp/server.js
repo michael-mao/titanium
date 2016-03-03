@@ -37,6 +37,21 @@ router
   });
 
 router
+  .get('/api/user', function*() {
+    var query = this.request.query;
+    var user;
+
+    this.status = 404;
+    if(query.email) {
+      user = yield db.getUser(decodeURIComponent(query.email));
+      if(user) {
+        this.status = 200;
+        this.body = {
+          email: user.email
+        };
+      }
+    }
+  })
   .post('/api/user', function*() {
     var data = this.request.body;
     var user, hash, salt;

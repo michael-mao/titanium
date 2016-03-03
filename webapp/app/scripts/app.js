@@ -37,9 +37,12 @@ app
       $locationProvider.html5Mode(true);
     }
   ])
-  .run(['$rootScope', '$location', 'config', 'Pubnub',
-    function($rootScope, $location, config, Pubnub) {
-      // TODO: put into config file
+  .run(['$rootScope', '$location', '$http', 'config', 'Pubnub',
+    function($rootScope, $location, $http, config, Pubnub) {
+      $http.defaults.headers.common = {
+        'Content-Type': 'application/json'
+      };
+
       Pubnub.init({
         publish_key: config.PUBLISH_KEY,
         subscribe_key: config.SUBSCRIBE_KEY

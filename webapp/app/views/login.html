@@ -13,13 +13,13 @@
                     <div class="form-group">
                         <div class="input-group">
                             <div class="input-group-addon"><span class="glyphicon glyphicon-lock"></span></div>
-                            <input type="password" class="form-control input-lg" ng-model="user.password" placeholder="Password" required>
+                            <input type="password" class="form-control input-lg" ng-model="user.password" placeholder="Password" minlength="6" maxlength="50" required>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-lg btn-block text-uppercase" ng-click="submit(user)">login</button>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block text-uppercase" ng-click="login(user)">login</button>
                 </form>
                 <div class="text-center">
-                    <a href="#">register</a> or <a href="#">reset password</a>
+                    <a href="" ng-click="openModal()">register</a> or <a href="#">reset password</a>
                 </div>
             </div>
         </div>

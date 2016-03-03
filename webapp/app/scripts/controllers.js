@@ -6,14 +6,25 @@ var controllers = angular.module('titaniumControllers', [
 ]);
 
 controllers
-  .controller('LoginController', ['$scope', '$rootScope', '$location', 'UserService',
-    function($scope, $rootScope, $location, UserService) {
+  .controller('LoginController', ['$scope', '$rootScope', '$location', '$uibModal', 'UserService',
+    function($scope, $rootScope, $location, $uibModal, UserService) {
       // check if already logged in
       if($rootScope.currentUser) {
         $location.path('/dashboard');
       }
 
-      $scope.submit = function submit(user) {
+      $scope.openModal = function openModal() {
+        $scope.registerModal = $uibModal.open({
+          templateUrl: 'views/registerModal.html',
+          scope: $scope
+        });
+      };
+
+      $scope.closeModal = function closeModal() {
+        $scope.registerModal.close()
+      };
+
+      $scope.login = function login(user) {
         UserService.login(user.email, user.password)
           .then(function success() {
             console.log('login successful');
@@ -22,7 +33,26 @@ controllers
           }, function error() {
             console.log('login failed');
           });
-      }
+      };
+
+      $scope.register = function register(newUser) {
+        if(newUser.password !== newUser.confirm) {
+          console.log('passwords do not match');
+        } else {
+          UserService.getUser(newUser.email)
+            .then(function success() {
+              console.log('user with email exists');
+            }, function error() {
+              UserService.createUser(newUser.email, newUser.password)
+                .then(function success() {
+                  $scope.closeModal();
+                  $location.path('/dashboard');
+                });
+
+            });
+        }
+      };
+
     }
   ]);
 

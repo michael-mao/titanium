@@ -3,16 +3,32 @@
 var services = angular.module('titaniumServices', []);
 
 services
-  .factory('UserService', function($q) {
+  .factory('UserService', function($http) {
     var service = {};
 
     service.login = function login(email, password) {
-      // TODO
-      return $q.when()
+      var data = {
+        email: email,
+        password: password
+      };
+      return $http.post('/authenticate', data);
     };
 
     service.logout = function logout() {
       // TODO
+    };
+
+    service.createUser = function createUser(email, password) {
+      var data = {
+        email: email,
+        password: password
+      };
+      return $http.post('/api/user', data);
+    };
+
+    service.getUser = function getUser(email) {
+      var query = '?email=' + encodeURIComponent(email);
+      return $http.get('/api/user' + query);
     };
 
     return service;
