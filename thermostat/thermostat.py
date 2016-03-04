@@ -76,7 +76,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
         # subscribe to remote access messages
         self.pubnub.subscribe(
-            channels=config.CHANNEL_NAME,
+            channels=config.THERMOSTAT_ID,
             callback=self._callback,
             error=self._error,
         )
@@ -233,14 +233,14 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
                     'temperature_high': round(self.temperature_range_ceiling),
                 }
             }
-            self.pubnub.publish(config.CHANNEL_NAME, data, error=self._error)
+            self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
             self.logger.debug('published message: {0}'.format(data))
         elif message['action'] == 'request_settings':
             data = {
                 'action': 'setting_data',
                 'data': self.settings
             }
-            self.pubnub.publish(config.CHANNEL_NAME, data, error=self._error)
+            self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
         elif message['action'] == 'update_temperature_range':
             self.temperature_range = (Decimal(message['temperature_low']), Decimal('temperature_high'))
         elif message['action'] == 'update_setting':

@@ -15,9 +15,7 @@ app
     MAX_TEMPERATURE: 35,
 
     PUBLISH_KEY: 'pub-c-5d83a3da-ce33-4b35-889e-85d5f3e1be17',
-    SUBSCRIBE_KEY: 'sub-c-470a1dd4-e027-11e5-bd77-02ee2ddab7fe',
-    CHANNEL_NAME: 'control',
-    THERMOSTAT_ID: 'thermostat'
+    SUBSCRIBE_KEY: 'sub-c-470a1dd4-e027-11e5-bd77-02ee2ddab7fe'
   })
   .config(['$routeProvider', '$locationProvider',
     function($routeProvider, $locationProvider) {
@@ -51,7 +49,7 @@ app
       $rootScope.$on('$routeChangeStart', function(event, next, current) {
         if(!$rootScope.currentUser) {
           if(next.templateUrl !== 'views/login.html') {
-            //$location.path('/login');
+            $location.path('/login');
           }
         }
       });

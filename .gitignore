@@ -9,7 +9,8 @@ __pycache__/
 *.log
 settings.json
 history.json
-app.db
+*.db
+
 
 # webapp
 webapp/app/bower_components/

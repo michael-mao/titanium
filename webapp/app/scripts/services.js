@@ -3,7 +3,7 @@
 var services = angular.module('titaniumServices', []);
 
 services
-  .factory('UserService', function($http) {
+  .factory('UserService', function($rootScope, $http) {
     var service = {};
 
     service.login = function login(email, password) {
@@ -11,17 +11,18 @@ services
         email: email,
         password: password
       };
-      return $http.post('/authenticate', data);
+      return $http.post('/api/authenticate', data);
     };
 
     service.logout = function logout() {
-      // TODO
+      $rootScope.currentUser = null;
     };
 
-    service.createUser = function createUser(email, password) {
+    service.createUser = function createUser(email, password, thermostatId) {
       var data = {
         email: email,
-        password: password
+        password: password,
+        thermostat_id: thermostatId
       };
       return $http.post('/api/user', data);
     };
@@ -35,7 +36,7 @@ services
   });
 
 services
-  .factory('ControlService', function($q, config, Pubnub) {
+  .factory('ControlService', function($rootScope, $q, Pubnub) {
     var service = {};
 
     service.temperatures = {
@@ -64,7 +65,7 @@ services
     service.connect = function connect() {
       var deferred = $q.defer();
       Pubnub.subscribe({
-        channel: config.CHANNEL_NAME,
+        channel: $rootScope.currentUser.thermostat_id,
         message: service.parseMessage,
         connect: deferred.resolve,
         error: deferred.reject
@@ -75,16 +76,16 @@ services
 
     service.disconnect = function disconnect() {
       Pubnub.unsubscribe({
-        channel: config.CHANNEL_NAME
+        channel: $rootScope.currentUser.thermostat_id
       });
     };
 
     service.thermostatOnline = function thermostatOnline() {
       var deferred = $q.defer();
       Pubnub.here_now({
-        channel: config.CHANNEL_NAME,
+        channel: $rootScope.currentUser.thermostat_id,
         callback: function(m) {
-          deferred.resolve(m.uuids.indexOf(config.THERMOSTAT_ID) > -1);
+          deferred.resolve(m.uuids.indexOf($rootScope.currentUser.thermostat_id) !== -1);
         },
         error: deferred.reject
       });
@@ -97,7 +98,7 @@ services
         action: 'request_temperatures'
       };
       Pubnub.publish({
-        channel: config.CHANNEL_NAME,
+        channel: $rootScope.currentUser.thermostat_id,
         message: data
       });
     };

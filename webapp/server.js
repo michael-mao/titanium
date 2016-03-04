@@ -60,6 +60,10 @@ router
         hash = yield utils.hashPassword(data.password, salt);
         if(utils.appendSalt(hash, salt) === user.password) {
           this.status = 201;
+          this.body = {
+            email: user.email,
+            thermostat_id: user.thermostatId
+          };
           return;
         }
       }
@@ -87,14 +91,24 @@ router
   })
   .post('/api/user', function*() {
     var data = this.request.body;
-    var user, hash, salt;
+    var user, hash, salt, thermostat;
 
-    if(data.email && data.password) {
-      salt = utils.generateSalt();
-      hash = yield utils.hashPassword(data.password, salt);
+    if(data.email && data.password && data.thermostat_id) {
+      // validate thermostat id
+      thermostat = yield db.getThermostat(data.thermostat_id);
+      if(!thermostat) {
+        this.throw('Invalid thermostat id', 400);
+      } else if(thermostat.registered) {
+        this.throw('Thermostat already registered', 400);
+      }
+
+      // create user
       user = yield db.getUser(data.email);
       if(!user) {
-        user = yield db.insertUser(data.email, utils.appendSalt(hash, salt));
+        salt = utils.generateSalt();
+        hash = yield utils.hashPassword(data.password, salt);
+        user = yield db.insertUser(data.email, utils.appendSalt(hash, salt), data.thermostat_id);
+        yield db.registerThermostat(data.thermostat_id);
         this.body = {
           email: user.email
         };
@@ -106,7 +120,34 @@ router
     this.throw('Missing fields', 400);
   })
   .put('/api/user', function*() {
+    // TODO
+  });
 
+router
+  .post('/api/thermostat', function*() {
+    var data = this.request.body;
+    var thermostat;
+
+    if(data.id) {
+      thermostat = yield db.getThermostat(data.id);
+      if(thermostat) {
+        this.throw('Thermostat already exists', 400);
+      }
+      thermostat = yield db.insertThermostat(data.id);
+      this.body = thermostat;
+      this.status = 201;
+      return;
+    }
+    this.throw('Missing fields', 400);
+  })
+  .get('/api/thermostat/:id', function*() {
+    var thermostatId = this.params.id;
+    var thermostat = yield db.getThermostat(thermostatId);
+    if(thermostat) {
+      this.body = thermostat;
+      return;
+    }
+    this.throw('Thermostat not found', 404);
   });
 
 app.use(router.routes());

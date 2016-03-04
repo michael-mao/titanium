@@ -26,9 +26,9 @@ controllers
 
       $scope.login = function login(user) {
         UserService.login(user.email, user.password)
-          .then(function success() {
+          .then(function success(data) {
             console.log('login successful');
-            $rootScope.currentUser = angular.copy($scope.user);
+            $rootScope.currentUser = angular.copy(data.data);
             $location.path('/dashboard');
           }, function error() {
             console.log('login failed');
@@ -39,16 +39,12 @@ controllers
         if(newUser.password !== newUser.confirm) {
           console.log('passwords do not match');
         } else {
-          UserService.getUser(newUser.email)
+          UserService.createUser(newUser.email, newUser.password, newUser.thermostat_id)
             .then(function success() {
-              console.log('user with email exists');
+              $scope.closeModal();
+              $location.path('/dashboard');
             }, function error() {
-              UserService.createUser(newUser.email, newUser.password)
-                .then(function success() {
-                  $scope.closeModal();
-                  $location.path('/dashboard');
-                });
-
+              console.log('user with email exists');
             });
         }
       };
@@ -57,8 +53,8 @@ controllers
   ]);
 
 controllers
-  .controller('DashboardController', ['$scope', '$location', '$interval', 'config', 'UserService', 'ControlService',
-    function($scope, $location, $interval, config, UserService, ControlService) {
+  .controller('DashboardController', ['$scope', '$rootScope', '$location', '$interval', 'config', 'UserService', 'ControlService',
+    function($scope, $rootScope, $location, $interval, config, UserService, ControlService) {
       var temperaturePoll = $interval(function() {
         if($scope.thermostatOnline) {
           ControlService.requestTemperatures();
@@ -110,7 +106,7 @@ controllers
         }
       });
 
-      ControlService.connect()
+      ControlService.connect($rootScope.currentUser.thermostat_id)
         .then(ControlService.thermostatOnline)
         .then(function success(isOnline) {
           $scope.thermostatOnline = isOnline;
@@ -118,9 +114,12 @@ controllers
         });
 
       $scope.logout = function logout() {
-        ControlService.disconnect();
-        UserService.logout();
-        $location.path('/login');
+        try {
+          ControlService.disconnect();
+        } finally {
+          UserService.logout();
+          $location.path('/login');
+        }
       };
     }
   ]);

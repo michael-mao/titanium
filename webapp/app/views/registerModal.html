@@ -10,12 +10,16 @@
             <input type="email" class="form-control input-lg" id="register-email" ng-model="newUser.email" required>
         </div>
         <div class="form-group">
-            <label for="register-password" class="control-label">Password</label>
+            <label for="register-password" class="control-label">Choose A Password</label>
             <input type="password" class="form-control input-lg" id="register-password" ng-model="newUser.password" minlength="6" maxlength="50" required>
         </div>
         <div class="form-group">
             <label for="register-confirm" class="control-label">Confirm Password</label>
             <input type="password" class="form-control input-lg" id="register-confirm" ng-model="newUser.confirm" minlength="6" maxlength="50" required>
+        </div>
+        <div class="form-group">
+            <label for="register-thermostat" class="control-label">Thermostat ID</label>
+            <input type="text" class="form-control input-lg" id="register-thermostat" ng-model="newUser.thermostat_id" required>
         </div>
     </form>
 </div>
