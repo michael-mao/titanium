@@ -17,16 +17,27 @@ controllers
       $scope.registerFormError = null;
       $scope.loginFormError = null;
 
-      $scope.openModal = function openModal() {
-        $scope.registerModal = $uibModal.open({
-          templateUrl: 'views/registerModal.html',
-          scope: $scope
-        });
+      $scope.openModal = function openModal(modal) {
+        if(modal == 'register') {
+          $scope.registerModal = $uibModal.open({
+            templateUrl: 'views/registerModal.html',
+            scope: $scope
+          });
+        } else if(modal == 'reset') {
+          $scope.resetPasswordModal = $uibModal.open({
+            templateUrl: 'views/resetPasswordModal.html',
+            scope: $scope
+          });
+        }
       };
 
-      $scope.closeModal = function closeModal() {
-        $scope.registerFormError = null;
-        $scope.registerModal.close()
+      $scope.closeModal = function closeModal(modal) {
+        if(modal == 'register') {
+          $scope.registerFormError = null;
+          $scope.registerModal.close();
+        } else if(modal == 'reset') {
+          $scope.resetPasswordModal.close();
+        }
       };
 
       $scope.login = function login(user) {
@@ -48,7 +59,7 @@ controllers
       $scope.register = function register(newUser) {
         UserService.createUser(newUser.email, newUser.password, newUser.thermostat_id)
           .then(function success() {
-            $scope.closeModal();
+            $scope.closeModal('register');
             $location.path('/dashboard');
           }, function error(data) {
             $scope.forms.register.$setUntouched();
