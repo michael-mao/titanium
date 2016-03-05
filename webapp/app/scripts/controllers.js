@@ -13,6 +13,10 @@ controllers
         $location.path('/dashboard');
       }
 
+      $scope.forms = {};
+      $scope.registerFormError = null;
+      $scope.loginFormError = null;
+
       $scope.openModal = function openModal() {
         $scope.registerModal = $uibModal.open({
           templateUrl: 'views/registerModal.html',
@@ -21,32 +25,35 @@ controllers
       };
 
       $scope.closeModal = function closeModal() {
+        $scope.registerFormError = null;
         $scope.registerModal.close()
       };
 
       $scope.login = function login(user) {
+        if(!user || !user.email || !user.password || $scope.forms.login.$invalid) {
+          $scope.loginFormError = 'Invalid email and/or password';
+          return;
+        }
         UserService.login(user.email, user.password)
           .then(function success(data) {
             console.log('login successful');
             $rootScope.currentUser = angular.copy(data.data);
             $location.path('/dashboard');
-          }, function error() {
-            console.log('login failed');
+          }, function error(data) {
+            $scope.forms.login.$setValidity(false);
+            $scope.loginFormError = data.data.message;
           });
       };
 
       $scope.register = function register(newUser) {
-        if(newUser.password !== newUser.confirm) {
-          console.log('passwords do not match');
-        } else {
-          UserService.createUser(newUser.email, newUser.password, newUser.thermostat_id)
-            .then(function success() {
-              $scope.closeModal();
-              $location.path('/dashboard');
-            }, function error() {
-              console.log('user with email exists');
-            });
-        }
+        UserService.createUser(newUser.email, newUser.password, newUser.thermostat_id)
+          .then(function success() {
+            $scope.closeModal();
+            $location.path('/dashboard');
+          }, function error(data) {
+            $scope.forms.register.$setUntouched();
+            $scope.registerFormError = data.data.message;
+          });
       };
 
     }

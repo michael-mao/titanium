@@ -96,3 +96,7 @@ body {
   display: flex;
   align-items: center;
 }
+
+.error-message {
+  color: #a94442;
+}

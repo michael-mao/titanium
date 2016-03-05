@@ -67,7 +67,7 @@ router
           return;
         }
       }
-      this.throw('Incorrect email and/or password', 401);
+      this.throw('Invalid email and/or password', 401);
     }
     this.throw('Missing fields', 400);
   });
@@ -99,7 +99,7 @@ router
       if(!thermostat) {
         this.throw('Invalid thermostat id', 400);
       } else if(thermostat.registered) {
-        this.throw('Thermostat already registered', 400);
+        this.throw('Thermostat ID already registered', 400);
       }
 
       // create user

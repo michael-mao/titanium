@@ -2,6 +2,7 @@
 
 var app = angular.module('titanium', [
   'ngRoute',
+  'ngMessages',
 
   'pubnub.angular.service',
 
@@ -35,11 +36,15 @@ app
       $locationProvider.html5Mode(true);
     }
   ])
-  .run(['$rootScope', '$location', '$http', 'config', 'Pubnub',
-    function($rootScope, $location, $http, config, Pubnub) {
+  .run(['$rootScope', '$location', '$http', '$templateCache', 'config', 'Pubnub',
+    function($rootScope, $location, $http, $templateCache, config, Pubnub) {
       $http.defaults.headers.common = {
         'Content-Type': 'application/json'
       };
+      $http.get('views/errorMessages.html')
+        .then(function(data) {
+          $templateCache.put('errorMessages', data.data);
+        });
 
       Pubnub.init({
         publish_key: config.PUBLISH_KEY,
@@ -55,3 +60,25 @@ app
       });
     }
   ]);
+
+
+app.directive("compare", function() {
+  return {
+    require: "ngModel",
+    scope: {
+      otherModelValue: "=compare"
+    },
+    link: function(scope, element, attributes, ngModel) {
+      ngModel.$validators.compare = function(modelValue) {
+        return modelValue == scope.otherModelValue;
+      };
+
+      scope.$watch("otherModelValue", function() {
+        ngModel.$validate();
+      });
+    }
+  };
+});
+
+
+
