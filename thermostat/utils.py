@@ -200,3 +200,53 @@ def get_geolocation():
 
     geolocation = json.loads(raw_data)
     return geolocation if geolocation['status'] == 'success' else None
+
+
+def filter_settings(settings):
+    """ Filter settings.
+
+    :param settings: dictionary of raw settings
+    :return: dictionary of filtered settings
+    """
+    return {name: value for name, value in settings.items() if not name.startswith('_')}
+
+
+def prettify_settings(settings):
+    """ Prettify settings for display.
+
+    Flattens nested key, values. Only supports depth of 2 for nesting.
+    Converts values to strings, maintains lists but converts elements.
+
+    :param settings: dictionary of raw settings
+    :return: dictionary of prettified settings
+    """
+    filtered = filter_settings(settings)
+    pretty = {}
+    for name, value in filtered.items():
+        pretty_name = name.replace('_', ' ').title()
+        if isinstance(value, dict):
+            for subname, subvalue in value.items():
+                combined_name = pretty_name + ' ' + subname.replace('_', ' ').title()
+                pretty[combined_name] = subvalue
+        else:
+            pretty_value = [str(item) for item in value] if isinstance(value, list) else str(value)
+            pretty[pretty_name] = pretty_value
+
+    return pretty
+
+
+# TODO: what the hell is this garbage, redo when it's not 2AM
+def unprettify_setting_name(settings, pretty_name, newValue):
+    raw_name = pretty_name.replace(' ', '_').lower()
+    for name, value in settings.items():
+        if name == raw_name:
+            return (name, newValue)
+
+        if name in raw_name:
+            updatedValue = {}
+            for subname, subvalue in value.items():
+                if raw_name.endswith(subname):
+                    updatedValue[subname] = newValue
+                else:
+                    updatedValue[subname] = value[subname]
+            return (name, updatedValue)

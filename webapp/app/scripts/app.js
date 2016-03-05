@@ -4,6 +4,7 @@ var app = angular.module('titanium', [
   'ngRoute',
   'ngMessages',
 
+  'LocalStorageModule',
   'pubnub.angular.service',
 
   'titaniumControllers',
@@ -36,8 +37,8 @@ app
       $locationProvider.html5Mode(true);
     }
   ])
-  .run(['$rootScope', '$location', '$http', '$templateCache', 'config', 'Pubnub',
-    function($rootScope, $location, $http, $templateCache, config, Pubnub) {
+  .run(['$rootScope', '$location', '$http', '$templateCache', 'config', 'Pubnub', 'localStorageService',
+    function($rootScope, $location, $http, $templateCache, config, Pubnub, localStorageService) {
       $http.defaults.headers.common = {
         'Content-Type': 'application/json'
       };
@@ -51,6 +52,7 @@ app
         subscribe_key: config.SUBSCRIBE_KEY
       });
 
+      $rootScope.currentUser = localStorageService.get('user');
       $rootScope.$on('$routeChangeStart', function(event, next, current) {
         if(!$rootScope.currentUser) {
           if(next.templateUrl !== 'views/login.html') {

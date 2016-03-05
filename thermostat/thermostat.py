@@ -90,6 +90,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
         Write data stored in memory back to files.
         """
+        self.pubnub.unsubscribe(config.THERMOSTAT_ID)
         utils.write_to_file(config.SETTINGS_FILENAME, self._settings)
         utils.write_to_file(config.HISTORY_FILENAME, self._history)
         self.cost_table.close()
@@ -237,14 +238,14 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             self.logger.debug('published message: {0}'.format(data))
         elif message['action'] == 'request_settings':
             data = {
-                'action': 'setting_data',
-                'data': self.settings
+                'action': 'settings_data',
+                'data': utils.prettify_settings(self.settings)
             }
             self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
         elif message['action'] == 'update_temperature_range':
             self.temperature_range = (Decimal(message['temperature_low']), Decimal('temperature_high'))
         elif message['action'] == 'update_setting':
-            self.settings = (message['setting_name'], message['setting_value'])
+            self.settings = utils.unprettify_setting_name(self.settings, message['setting_name'], message['setting_value'])
 
     def _error(self, message):
         """ Pubnub error callback.
@@ -278,7 +279,8 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         # TODO: validation
         self.locks['settings'].acquire(False)
         key, value = t
-        self._settings[key] = value
+        if self._settings.get(key):
+            self._settings[key] = value
         self.locks['settings'].release()
 
     @property

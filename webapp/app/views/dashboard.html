@@ -60,7 +60,26 @@
 
         <h2 class="sub-header">Settings</h2>
         <div class="row">
-
+            <div class="panel panel-default">
+                <div class="panel-heading text-muted">
+                    <em ng-show="thermostatOnline">Click on a setting to change its value</em>
+                    <em ng-show="!thermostatOnline">Settings currently unavailable</em>
+                </div>
+                <table class="table table-hover">
+                    <tr class="h4">
+                        <th></th>
+                        <th><b>Name</b></th>
+                        <th><b>Value</b></th>
+                        <th></th>
+                    </tr>
+                    <tr class="h4 clickable" ng-repeat="(name, value) in settings" ng-click="openModal({ name: name, value: value})">
+                        <td></td>
+                        <td>{{ name }}</td>
+                        <td>{{ value }}</td>
+                        <td></td>
+                    </tr>
+                </table>
+            </div>
         </div>
     </div>
 </div>
