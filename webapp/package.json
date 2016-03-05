@@ -1,0 +1,18 @@
+{
+  "name": "titanium",
+  "version": "0.0.1",
+  "author": "Michael Mao <michael340@gmail.com>",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "koa": "1.1.2",
+    "koa-bodyparser": "2.0.1",
+    "koa-router": "5.4.0",
+    "koa-send": "3.1.0",
+    "nedb": "1.8.0"
+  }
+}

@@ -4,6 +4,9 @@ python:
   enabled: true
   config_file: .flake8.ini
 
+javascript:
+  enabled: false
+
 ruby:
   enabled: false
 

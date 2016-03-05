@@ -2,11 +2,16 @@
 __pycache__/
 *.py[cod]
 
-#PyCharm
+# PyCharm
 .idea
 
 # Generated files
 *.log
 settings.json
 history.json
-app.db
+*.db
+
+
+# webapp
+webapp/app/bower_components/
+webapp/node_modules/

@@ -9,13 +9,30 @@ import datetime
 import decimal
 import urllib.request
 
+from enum import Enum, unique
 
-# project root dir
-BASE_DIR = os.path.dirname(__file__)
-DEFAULT_SETTINGS_FILENAME = 'default_settings.json'
-SETTINGS_FILENAME = 'settings.json'
-DEFAULT_HISTORY_FILENAME = 'default_history.json'
-HISTORY_FILENAME = 'history.json'
+from . import config
+
+
+@unique
+class State(Enum):
+    OFF = 0
+    HEAT = 1
+    COOL = 2
+
+    def __str__(self):
+        return self.name
+
+
+@unique
+class WeekDay(Enum):
+    monday = 0
+    tuesday = 1
+    wednesday = 2
+    thursday = 3
+    friday = 4
+    saturday = 5
+    sunday = 6
 
 
 class Singleton(type):
@@ -72,8 +89,8 @@ def init_settings():
     :return: dictionary of settings
     """
     logger = logging.getLogger('app.utils')
-    default_filepath = os.path.abspath(os.path.join(BASE_DIR, '..', DEFAULT_SETTINGS_FILENAME))
-    filepath = os.path.abspath(os.path.join(BASE_DIR, '..', SETTINGS_FILENAME))
+    default_filepath = os.path.abspath(os.path.join(config.BASE_DIR, '..', config.DEFAULT_SETTINGS_FILENAME))
+    filepath = os.path.abspath(os.path.join(config.BASE_DIR, '..', config.SETTINGS_FILENAME))
 
     if os.path.isfile(filepath) is True:
         logger.debug('loading existing settings file')
@@ -98,8 +115,8 @@ def init_history():
     :return: dictionary of history
     """
     logger = logging.getLogger('app.utils')
-    default_filepath = os.path.abspath(os.path.join(BASE_DIR, '..', DEFAULT_HISTORY_FILENAME))
-    filepath = os.path.abspath(os.path.join(BASE_DIR, '..', HISTORY_FILENAME))
+    default_filepath = os.path.abspath(os.path.join(config.BASE_DIR, '..', config.DEFAULT_HISTORY_FILENAME))
+    filepath = os.path.abspath(os.path.join(config.BASE_DIR, '..', config.HISTORY_FILENAME))
 
     if os.path.isfile(filepath) is True:
         logger.debug('loading existing history file')
@@ -125,7 +142,7 @@ def write_to_file(filename, data):
     if not isinstance(filename, str) or not isinstance(data, dict):
         raise TypeError('filename must be string and data must be dict')
 
-    filepath = os.path.abspath(os.path.join(BASE_DIR, '..', filename))
+    filepath = os.path.abspath(os.path.join(config.BASE_DIR, '..', filename))
 
     # warning, overwrites existing file
     with open(filepath, 'w') as f:

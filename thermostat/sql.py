@@ -5,14 +5,14 @@ import csv
 import sqlite3 as lite
 
 from logging import getLogger
-from . import utils
+from . import config
 
 
 class DB:
 
     def __init__(self, db_name='app.db'):
         self.db_name = db_name
-        path = os.path.abspath(os.path.join(utils.BASE_DIR, '..', self.db_name))
+        path = os.path.abspath(os.path.join(config.BASE_DIR, '..', self.db_name))
         self.conn = lite.connect(path)
         self.cursor = self.conn.cursor()
         self.cursor.executescript(
