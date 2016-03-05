@@ -55,4 +55,3 @@ DEFAULT_SETTINGS_FILENAME = 'default_settings.json'
 SETTINGS_FILENAME = 'settings.json'
 DEFAULT_HISTORY_FILENAME = 'default_history.json'
 HISTORY_FILENAME = 'history.json'
-
