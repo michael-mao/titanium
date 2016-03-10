@@ -6,8 +6,8 @@ var controllers = angular.module('titaniumControllers', [
 ]);
 
 controllers
-  .controller('LoginController', ['$scope', '$rootScope', '$location', '$uibModal', 'UserService',
-    function($scope, $rootScope, $location, $uibModal, UserService) {
+  .controller('LoginController', ['$scope', '$rootScope', '$location', '$uibModal', 'localStorageService', 'UserService',
+    function($scope, $rootScope, $location, $uibModal, localStorageService, UserService) {
       // check if already logged in
       if($rootScope.currentUser) {
         $location.path('/dashboard');
@@ -46,9 +46,8 @@ controllers
           return;
         }
         UserService.login(user.email, user.password)
-          .then(function success(data) {
+          .then(function success() {
             console.log('login successful');
-            $rootScope.currentUser = angular.copy(data.data);
             $location.path('/dashboard');
           }, function error(data) {
             $scope.forms.login.$setValidity(false);
@@ -71,15 +70,23 @@ controllers
   ]);
 
 controllers
-  .controller('DashboardController', ['$scope', '$rootScope', '$location', '$interval', 'config', 'UserService', 'ControlService',
-    function($scope, $rootScope, $location, $interval, config, UserService, ControlService) {
+  .controller('DashboardController', ['$scope', '$rootScope', '$location', '$interval', '$timeout', '$uibModal', 'localStorageService', 'config', 'UserService', 'ControlService',
+    function($scope, $rootScope, $location, $interval, $timeout, $uibModal, localStorageService, config, UserService, ControlService) {
       var temperaturePoll = $interval(function() {
         if($scope.thermostatOnline) {
           ControlService.requestTemperatures();
         }
       }, 30000); // 30s;
+      var onlinePoll = $interval(function() {
+        ControlService.thermostatOnline()
+          .then(function success(isOnline) {
+            $scope.thermostatOnline = isOnline;
+          });
+      }, 60000); // 1min
+      $scope.forms = {};
       $scope.thermostatOnline = false;
       $scope.temperatures = ControlService.temperatures;
+      $scope.settings = ControlService.settings;
       $scope.ctKnobOptions = {
         size: 200,
         unit: 'C',
@@ -110,6 +117,7 @@ controllers
 
       $scope.$on('$destroy', function() {
         $interval.cancel(temperaturePoll);
+        $interval.cancel(onlinePoll);
       });
 
       $scope.$watch('temperatures.temperature_low', function(value) {
@@ -124,11 +132,45 @@ controllers
         }
       });
 
+      $scope.openModal = function openModal(setting) {
+        $scope.modalSetting = setting;
+        $scope.settingModal = $uibModal.open({
+          templateUrl: 'views/settingModal.html',
+          scope: $scope,
+          size: 'sm'
+        });
+      };
+
+      $scope.closeModal = function closeModal() {
+        $scope.modalSetting = {};
+        $scope.settingModal.close();
+      };
+
+      $scope.updateSetting = function updateSetting(setting) {
+        if(!setting || !setting.name || !setting) {
+          return;
+        }
+        // TODO: confirm success
+        ControlService.updateSetting(setting.name, setting.value);
+        $scope.settings[setting.name] = setting.value;
+        $scope.closeModal();
+      };
+
+      $scope.isEmpty = function isEmpty(obj) {
+        return obj === {};
+      };
+
       ControlService.connect($rootScope.currentUser.thermostat_id)
         .then(ControlService.thermostatOnline)
         .then(function success(isOnline) {
           $scope.thermostatOnline = isOnline;
           ControlService.requestTemperatures();
+          ControlService.requestSettings();
+
+          // HACK to display results quickly
+          $timeout(function() {
+            $scope.$digest();
+          }, 2000);
         });
 
       $scope.logout = function logout() {

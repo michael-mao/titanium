@@ -168,7 +168,8 @@ class GUI(metaclass=utils.Singleton):
         self.screen.blit(self.images['back_button'], self.positions['back_button'])
 
         # setting names
-        for i, setting in enumerate(self.thermostat.settings.keys()):
+        pretty_settings = utils.prettify_settings(self.thermostat.settings)
+        for i, setting in enumerate(pretty_settings.keys()):
             text = self.fonts['settings'].render(setting, 1, self.BLACK)
             self.screen.blit(text, (0.1*self.WIDTH, (0.2*self.HEIGHT) + (i*20)))
 
@@ -177,7 +178,7 @@ class GUI(metaclass=utils.Singleton):
         Draws the settings values.
         Assumes settings in Thermostat() is OrderedDict.
         """
-        # TODO parse nested values
-        for i, value in enumerate(self.thermostat.settings.values()):
+        pretty_settings = utils.prettify_settings(self.thermostat.settings)
+        for i, value in enumerate(pretty_settings.values()):
             text = self.fonts['settings'].render(str(value), 1, self.BLACK)
             self.screen.blit(text, (0.6*self.WIDTH, (0.2*self.HEIGHT) + (i*20)))

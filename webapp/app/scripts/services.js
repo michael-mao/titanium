@@ -3,7 +3,7 @@
 var services = angular.module('titaniumServices', []);
 
 services
-  .factory('UserService', function($rootScope, $http) {
+  .factory('UserService', function($rootScope, $http, $q, localStorageService) {
     var service = {};
 
     service.login = function login(email, password) {
@@ -11,11 +11,17 @@ services
         email: email,
         password: password
       };
-      return $http.post('/api/authenticate', data);
+      return $http.post('/api/authenticate', data)
+        .then(function success(data) {
+          $rootScope.currentUser = angular.copy(data.data);
+          localStorageService.set('user', $rootScope.currentUser);
+          return $q.when($rootScope.currentUser);
+        });
     };
 
     service.logout = function logout() {
       $rootScope.currentUser = null;
+      localStorageService.remove('user');
     };
 
     service.createUser = function createUser(email, password, thermostatId) {
@@ -55,7 +61,7 @@ services
           service.temperatures['current_temperature'] = message.data['current_temperature'];
         }
       } else if(message.action == 'settings_data') {
-        service.extend(service.settings, message.data);
+        angular.extend(service.settings, message.data);
       } else {
         // unexpected message type
         console.log(message);
@@ -96,6 +102,28 @@ services
     service.requestTemperatures = function requestTemperatures() {
       var data = {
         action: 'request_temperatures'
+      };
+      Pubnub.publish({
+        channel: $rootScope.currentUser.thermostat_id,
+        message: data
+      });
+    };
+
+    service.requestSettings = function requestSettings() {
+      var data = {
+        action: 'request_settings'
+      };
+      Pubnub.publish({
+        channel: $rootScope.currentUser.thermostat_id,
+        message: data
+      });
+    };
+
+    service.updateSetting = function updateSetting(name, value) {
+      var data = {
+        action: 'update_setting',
+        setting_name: name,
+        setting_value: value
       };
       Pubnub.publish({
         channel: $rootScope.currentUser.thermostat_id,

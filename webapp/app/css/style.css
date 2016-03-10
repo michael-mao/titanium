@@ -3,6 +3,10 @@ body {
   padding-top: 50px;
 }
 
+tr {
+  height: 50px;
+}
+
 /*
  * Top Navigation
  */
@@ -99,4 +103,8 @@ body {
 
 .error-message {
   color: #a94442;
+}
+
+.clickable {
+  cursor: pointer;
 }
