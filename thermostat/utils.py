@@ -236,17 +236,17 @@ def prettify_settings(settings):
 
 
 # TODO: what the hell is this garbage, redo when it's not 2AM
-def unprettify_setting_name(settings, pretty_name, newValue):
+def unprettify_setting_name(settings, pretty_name, new_value):
     raw_name = pretty_name.replace(' ', '_').lower()
     for name, value in settings.items():
         if name == raw_name:
-            return (name, newValue)
+            return (name, new_value)
 
         if name in raw_name:
-            updatedValue = {}
+            updated_value = {}
             for subname, subvalue in value.items():
                 if raw_name.endswith(subname):
-                    updatedValue[subname] = newValue
+                    updated_value[subname] = new_value
                 else:
-                    updatedValue[subname] = value[subname]
-            return (name, updatedValue)
+                    updated_value[subname] = value[subname]
+            return (name, updated_value)
