@@ -243,9 +243,15 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             }
             self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
         elif message['action'] == 'update_temperature_range':
-            self.temperature_range = (Decimal(message['temperature_low']), Decimal('temperature_high'))
+            low = message.get('temperature_low')
+            high = message.get('temperature_high')
+            if low is not None and high is not None:
+                self.temperature_range = (Decimal(low), Decimal(high))
         elif message['action'] == 'update_setting':
-            self.settings = utils.unprettify_setting_name(self.settings, message['setting_name'], message['setting_value'])
+            name = message.get('setting_name')
+            value = message.get('setting_value')
+            if name is not None and value is not None:
+                self.settings = utils.unprettify_setting_name(self.settings, name, value)
 
     def _error(self, message):
         """ Pubnub error callback.

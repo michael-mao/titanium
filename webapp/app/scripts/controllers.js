@@ -83,6 +83,8 @@ controllers
             $scope.thermostatOnline = isOnline;
           });
       }, 60000); // 1min
+      var updateRangeTimeout = null;
+      var updateRangeDelay = 5000; // 5s
       $scope.forms = {};
       $scope.thermostatOnline = false;
       $scope.temperatures = ControlService.temperatures;
@@ -115,21 +117,31 @@ controllers
         dynamicOptions: true
       };
 
+      $scope.resetUpdateTimeout = function resetUpdateTimeout() {
+        $timeout.cancel(updateRangeTimeout);
+        updateRangeTimeout = $timeout(function() {
+          ControlService.updateTemperatureRange($scope.temperatures['temperature_low'], $scope.temperatures['temperature_high']);
+        }, updateRangeDelay);
+      };
+
       $scope.$on('$destroy', function() {
         $interval.cancel(temperaturePoll);
         $interval.cancel(onlinePoll);
+        $timeout.cancel(updateRangeTimeout);
       });
 
       $scope.$watch('temperatures.temperature_low', function(value) {
         if(value > $scope.temperatures['temperature_high']) {
           $scope.temperatures['temperature_low'] = $scope.temperatures['temperature_high'];
         }
+        $scope.resetUpdateTimeout();
       });
 
       $scope.$watch('temperatures.temperature_high', function(value) {
         if(value < $scope.temperatures['temperature_low']) {
           $scope.temperatures['temperature_high'] = $scope.temperatures['temperature_low'];
         }
+        $scope.resetUpdateTimeout();
       });
 
       $scope.openModal = function openModal(setting) {
@@ -160,6 +172,7 @@ controllers
         return obj === {};
       };
 
+      // dashboard initialization
       ControlService.connect($rootScope.currentUser.thermostat_id)
         .then(ControlService.thermostatOnline)
         .then(function success(isOnline) {
