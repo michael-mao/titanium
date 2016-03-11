@@ -24,8 +24,6 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         - All floating point arithmetic should use Decimal type, pass in number as str to maintain precision
     """
 
-    UPDATE_INTERVAL = 5
-
     def __init__(self):
         super().__init__()
         self._settings = OrderedDict(sorted(utils.init_settings().items(), key=lambda t: t[0]))
@@ -33,9 +31,12 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self._current_temperature = Decimal(0)
         self._temperature_range = (Decimal(0), Decimal(0))
         self._on_rpi = utils.on_rpi()
-        self.temperature_increment = Decimal('0.5')
-        self.state = utils.State.OFF
+
         self.logger = getLogger('app.thermostat')
+        self.temperature_offset = Decimal('1.5')
+        self.state = utils.State.IDLE
+        self.last_state_update = time.time() + config.OSCILLATION_DELAY
+
         self.cost_table = None  # must init after thread starts
         self.pubnub = Pubnub(
             publish_key=config.PUBLISH_KEY,
@@ -82,8 +83,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         )
 
         while True:
-            self.update_state()
-            time.sleep(self.UPDATE_INTERVAL)
+            if self.state != utils.State.OFF:
+                self.update_state()
+            time.sleep(config.UPDATE_INTERVAL)
 
     def stop(self):
         """ Exit handler.
@@ -96,6 +98,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.cost_table.close()
         self.logger.info('cleanup completed')
 
+    def toggle_power(self):
+        self.state = utils.State.IDLE if self.state == utils.State.OFF else utils.State.OFF
+
     def update_state(self):
         """ Decision maker.
 
@@ -106,15 +111,20 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             self.current_temperature = sensor.read_temperature()
 
         low, high = self.temperature_range
-        if self.current_temperature < (low - self.temperature_increment):
-            self.state = utils.State.HEAT
-        elif self.current_temperature > (high + self.temperature_increment):
-            self.state = utils.State.COOL
+        if self.current_temperature < (low - self.temperature_offset):
+            new_state = utils.State.HEAT
+        elif self.current_temperature > (high + self.temperature_offset):
+            new_state = utils.State.COOL
         else:
             # within range, make decision
-            self.state = self.make_decision()
+            new_state = self.make_decision()
 
-        self.logger.debug('thermostat state updated to {0}'.format(self.state))
+        # prevent oscillation
+        if (time.time() - self.last_state_update) > config.OSCILLATION_DELAY:
+            if self.state != new_state:
+                self.last_state_update = time.time()
+            self.state = new_state
+            self.logger.debug('thermostat state updated to {0}'.format(self.state))
 
     def make_decision(self):
         params_list = list()
