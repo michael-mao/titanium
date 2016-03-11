@@ -1,85 +1,47 @@
-<nav class="navbar navbar-inverse navbar-fixed-top">
-    <div class="container-fluid">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <span class="navbar-brand">thermostat</span>
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 dashboard-main">
+    <h1 class="page-header">Dashboard</h1>
+    <div class="row text-center">
+        <div class="alert alert-success" ng-show="thermostatOnline">Thermostat is <strong>ONLINE</strong></div>
+        <div class="alert alert-danger" ng-show="!thermostatOnline">Thermostat is <strong>OFFLINE</strong></div>
+    </div>
+    <div class="row text-center dashboard-temperatures">
+        <div class="col-md-4">
+            <ui-knob value="temperatures.temperature_low" options="trKnobOptions"></ui-knob>
+            <h4>Low</h4>
+            <span class="text-muted">Spin to adjust</span>
         </div>
-        <div id="navbar" class="navbar-collapse collapse">
-            <ul class="nav navbar-nav navbar-right topnav">
-                <li><a href="#">Dashboard</a></li>
-                <li><a href="#">Profile</a></li>
-                <li><a href="#">Help</a></li>
-                <li><a href="" ng-click="logout()">Logout</a> </li>
-            </ul>
-            <form class="navbar-form navbar-right">
-                <input type="text" class="form-control" placeholder="Search...">
-            </form>
+        <div class="col-md-4">
+            <ui-knob value="temperatures.current_temperature" options="ctKnobOptions"></ui-knob>
+            <h4>Current Temperature</h4>
+        </div>
+        <div class="col-md-4">
+            <ui-knob value="temperatures.temperature_high" options="trKnobOptions"></ui-knob>
+            <h4>High</h4>
+            <span class="text-muted">Spin to adjust</span>
         </div>
     </div>
-</nav>
-<div class="container-fluid">
+
+    <h2 class="sub-header">Settings</h2>
     <div class="row">
-        <div class="col-sm-3 col-md-2 sidebar">
-            <ul class="nav nav-sidebar">
-                <li class="active"><a href="#">Dashboard</a></li>
-                <li><a href="#">Profile</a></li>
-                <li><a href="#">Help</a></li>
-            </ul>
-            <ul class="nav nav-sidebar">
-                <li><a href="" ng-click="logout()">Logout</a></li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 dashboard-main">
-        <h1 class="page-header">Dashboard</h1>
-        <div class="row text-center">
-            <div class="alert alert-success" ng-show="thermostatOnline">Thermostat is <strong>ONLINE</strong></div>
-            <div class="alert alert-danger" ng-show="!thermostatOnline">Thermostat is <strong>OFFLINE</strong></div>
-        </div>
-        <div class="row text-center dashboard-temperatures">
-            <div class="col-md-4">
-                <ui-knob value="temperatures.temperature_low" options="trKnobOptions"></ui-knob>
-                <h4>Low</h4>
-                <span class="text-muted">Spin to adjust</span>
+        <div class="panel panel-default">
+            <div class="panel-heading text-muted">
+                <em ng-show="thermostatOnline">Click on a setting to change its value</em>
+                <em ng-show="!thermostatOnline">Settings currently unavailable</em>
             </div>
-            <div class="col-md-4">
-                <ui-knob value="temperatures.current_temperature" options="ctKnobOptions"></ui-knob>
-                <h4>Current Temperature</h4>
-            </div>
-            <div class="col-md-4">
-                <ui-knob value="temperatures.temperature_high" options="trKnobOptions"></ui-knob>
-                <h4>High</h4>
-                <span class="text-muted">Spin to adjust</span>
-            </div>
-        </div>
-
-        <h2 class="sub-header">Settings</h2>
-        <div class="row">
-            <div class="panel panel-default">
-                <div class="panel-heading text-muted">
-                    <em ng-show="thermostatOnline">Click on a setting to change its value</em>
-                    <em ng-show="!thermostatOnline">Settings currently unavailable</em>
-                </div>
-                <table class="table table-hover">
-                    <tr class="h4">
-                        <th></th>
-                        <th><b>Name</b></th>
-                        <th><b>Value</b></th>
-                        <th></th>
-                    </tr>
-                    <tr class="h4 clickable" ng-repeat="(name, value) in settings" ng-click="openModal({ name: name, value: value})">
-                        <td></td>
-                        <td>{{ name }}</td>
-                        <td>{{ value }}</td>
-                        <td></td>
-                    </tr>
-                </table>
-            </div>
+            <table class="table table-hover">
+                <tr class="h4">
+                    <th></th>
+                    <th><b>Name</b></th>
+                    <th><b>Value</b></th>
+                    <th></th>
+                </tr>
+                <tr class="h4 clickable" ng-repeat="(name, value) in settings" ng-click="openModal({ name: name, value: value})">
+                    <td></td>
+                    <td>{{ name }}</td>
+                    <td>{{ value }}</td>
+                    <td></td>
+                </tr>
+            </table>
         </div>
     </div>
 </div>

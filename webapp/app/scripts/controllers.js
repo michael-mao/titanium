@@ -6,6 +6,27 @@ var controllers = angular.module('titaniumControllers', [
 ]);
 
 controllers
+  .controller('MainController', ['$scope', '$location', 'ControlService', 'UserService',
+    function($scope, $location, ControlService, UserService) {
+      $scope.options = {};
+      $scope.options.showNav = false;
+
+      $scope.isActive = function isActive(view) {
+        return view === $location.path();
+      };
+
+      $scope.logout = function logout() {
+        try {
+          ControlService.disconnect();
+        } finally {
+          UserService.logout();
+          $location.path('/login');
+        }
+      };
+    }
+  ]);
+
+controllers
   .controller('LoginController', ['$scope', '$rootScope', '$location', '$uibModal', 'localStorageService', 'UserService',
     function($scope, $rootScope, $location, $uibModal, localStorageService, UserService) {
       // check if already logged in
@@ -13,6 +34,7 @@ controllers
         $location.path('/dashboard');
       }
 
+      $scope.options.showNav = false;
       $scope.forms = {};
       $scope.registerFormError = null;
       $scope.loginFormError = null;
@@ -83,10 +105,15 @@ controllers
             $scope.thermostatOnline = isOnline;
           });
       }, 60000); // 1min
+      var updateRangeTimeout = null;
+      var updateRangeDelay = 5000; // 5s
+
+      $scope.options.showNav = true;
       $scope.forms = {};
       $scope.thermostatOnline = false;
       $scope.temperatures = ControlService.temperatures;
       $scope.settings = ControlService.settings;
+      // TODO: disable knobs when offline, make readonly
       $scope.ctKnobOptions = {
         size: 200,
         unit: 'C',
@@ -115,21 +142,33 @@ controllers
         dynamicOptions: true
       };
 
+      $scope.resetUpdateTimeout = function resetUpdateTimeout() {
+        $timeout.cancel(updateRangeTimeout);
+        updateRangeTimeout = $timeout(function() {
+          if($scope.thermostatOnline) {
+            ControlService.updateTemperatureRange($scope.temperatures['temperature_low'], $scope.temperatures['temperature_high']);
+          }
+        }, updateRangeDelay);
+      };
+
       $scope.$on('$destroy', function() {
         $interval.cancel(temperaturePoll);
         $interval.cancel(onlinePoll);
+        $timeout.cancel(updateRangeTimeout);
       });
 
       $scope.$watch('temperatures.temperature_low', function(value) {
         if(value > $scope.temperatures['temperature_high']) {
           $scope.temperatures['temperature_low'] = $scope.temperatures['temperature_high'];
         }
+        $scope.resetUpdateTimeout();
       });
 
       $scope.$watch('temperatures.temperature_high', function(value) {
         if(value < $scope.temperatures['temperature_low']) {
           $scope.temperatures['temperature_high'] = $scope.temperatures['temperature_low'];
         }
+        $scope.resetUpdateTimeout();
       });
 
       $scope.openModal = function openModal(setting) {
@@ -160,26 +199,34 @@ controllers
         return obj === {};
       };
 
+      // dashboard initialization
       ControlService.connect($rootScope.currentUser.thermostat_id)
         .then(ControlService.thermostatOnline)
         .then(function success(isOnline) {
           $scope.thermostatOnline = isOnline;
-          ControlService.requestTemperatures();
-          ControlService.requestSettings();
+          if($scope.thermostatOnline) {
+            ControlService.requestTemperatures();
+            ControlService.requestSettings();
 
-          // HACK to display results quickly
-          $timeout(function() {
-            $scope.$digest();
-          }, 2000);
+            // HACK to display results quickly
+            $timeout(function() {
+              $scope.$digest();
+            }, 2000);
+          }
         });
+    }
+  ]);
 
-      $scope.logout = function logout() {
-        try {
-          ControlService.disconnect();
-        } finally {
-          UserService.logout();
-          $location.path('/login');
-        }
-      };
+controllers
+  .controller('ProfileController', ['$scope',
+    function($scope) {
+      $scope.options.showNav = true;
+    }
+  ]);
+
+controllers
+  .controller('HelpController', ['$scope',
+    function($scope) {
+      $scope.options.showNav = true;
     }
   ]);

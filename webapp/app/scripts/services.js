@@ -131,5 +131,17 @@ services
       });
     };
 
+    service.updateTemperatureRange = function updateTemperatureRange(low, high) {
+      var data = {
+        action: 'update_temperature_range',
+        temperature_low: low,
+        temperature_high: high
+      };
+      Pubnub.publish({
+        channel: $rootScope.currentUser.thermostat_id,
+        message: data
+      });
+    };
+
     return service;
   });
