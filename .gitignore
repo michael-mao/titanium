@@ -1,0 +1,6 @@
+# Jekyll ignores
+.sass-cache/
+_site
+
+# IDE
+.idea/
