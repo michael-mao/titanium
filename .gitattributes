@@ -1,0 +1,8 @@
+# default
+* text=auto
+
+# bash scripts
+*.sh text eol=lf
+
+*.png binary
+*.jpg binary

@@ -25,7 +25,14 @@ $ python main.py
 ```
 
 ## Webapp
-Install server and front-end dependencies with:
+Install server and front-end dependencies with the `setup.sh` bash script or manually:
+
+**Script**
+```
+$ bash setup.sh
+```
+
+**Manual**
 ```
 # in the webapp/ directory
 $ npm install
