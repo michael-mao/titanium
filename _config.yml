@@ -9,7 +9,7 @@ owner: Titanium # or company name
 first_published: 2016
 email: m.mao@outlook.com
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "http://michael-mao.github.io/titanium" # the base hostname & protocol for your site
+url: "http://blog.michaelmao.ca" # the base hostname & protocol for your site
 app_url: "http://titanium.michaelmao.ca"
 social:
   #twitter: https://twitter.com/<username>
