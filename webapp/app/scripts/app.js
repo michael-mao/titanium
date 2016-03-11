@@ -3,6 +3,7 @@
 var app = angular.module('titanium', [
   'ngRoute',
   'ngMessages',
+  'ngAnimate',
 
   'LocalStorageModule',
   'pubnub.angular.service',
@@ -29,6 +30,14 @@ app
         .when('/dashboard', {
           templateUrl: 'views/dashboard.html',
           controller: 'DashboardController'
+        })
+        .when('/profile', {
+          templateUrl: 'views/profile.html',
+          controller: 'ProfileController'
+        })
+        .when('/help', {
+          templateUrl: 'views/help.html',
+          controller: 'HelpController'
         })
         .otherwise({
           redirectTo: '/dashboard'

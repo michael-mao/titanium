@@ -11,6 +11,10 @@ controllers
       $scope.options = {};
       $scope.options.showNav = false;
 
+      $scope.isActive = function isActive(view) {
+        return view === $location.path();
+      };
+
       $scope.logout = function logout() {
         try {
           ControlService.disconnect();
@@ -210,5 +214,19 @@ controllers
             }, 2000);
           }
         });
+    }
+  ]);
+
+controllers
+  .controller('ProfileController', ['$scope',
+    function($scope) {
+      $scope.options.showNav = true;
+    }
+  ]);
+
+controllers
+  .controller('HelpController', ['$scope',
+    function($scope) {
+      $scope.options.showNav = true;
     }
   ]);
