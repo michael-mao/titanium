@@ -226,6 +226,26 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         time_block = rounded_dt.strftime('%H:%M')
         self._history[day][time_block] = str(temperature)  # store as str to avoid conversion to JSON float
 
+    def publish_temperatures(self, current=True, range=True):
+        data = {
+            'action': 'temperature_data',
+            'data': {
+                'current_temperature': round(self.current_temperature) if current else None,
+                'temperature_low': round(self.temperature_range_floor) if range else None,
+                'temperature_high': round(self.temperature_range_ceiling) if range else None,
+            }
+        }
+        self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
+        self.logger.debug('published message: {0}'.format(data))
+
+    def publish_settings(self):
+        data = {
+            'action': 'settings_data',
+            'data': utils.prettify_settings(self.settings)
+        }
+        self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
+        self.logger.debug('published message: {0}'.format(data))
+
     def _callback(self, message, channel):
         """ Pubnub message callback.
 
@@ -236,22 +256,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.logger.debug(message)
 
         if message['action'] == 'request_temperatures':
-            data = {
-                'action': 'temperature_data',
-                'data': {
-                    'current_temperature': round(self.current_temperature),
-                    'temperature_low': round(self.temperature_range_floor),
-                    'temperature_high': round(self.temperature_range_ceiling),
-                }
-            }
-            self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
-            self.logger.debug('published message: {0}'.format(data))
+            self.publish_temperatures(range=(message['value'] == 'all'))
         elif message['action'] == 'request_settings':
-            data = {
-                'action': 'settings_data',
-                'data': utils.prettify_settings(self.settings)
-            }
-            self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
+            self.publish_settings()
         elif message['action'] == 'update_temperature_range':
             low = message.get('temperature_low')
             high = message.get('temperature_high')
@@ -297,6 +304,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         key, value = t
         if self._settings.get(key):
             self._settings[key] = value
+            self.publish_settings()
         self.locks['settings'].release()
 
     @property
@@ -321,6 +329,8 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             self.validate_temperature(low)
             self.validate_temperature(high)
             self._temperature_range = t_range
+            # send update
+            self.publish_temperatures(current=False)
         finally:
             self.locks['temperature_range'].release()
 
