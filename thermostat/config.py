@@ -24,8 +24,8 @@ THERMOSTAT_ID = 'thermostat'
 ##############################
 
 # timing, in seconds
-UPDATE_INTERVAL = 5
-OSCILLATION_DELAY = 300
+UPDATE_INTERVAL = 10
+OSCILLATION_DELAY = 120
 
 # bounds for input range
 MIN_TEMPERATURE = 0
