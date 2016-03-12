@@ -104,7 +104,6 @@ def init_settings():
         with open(filepath, 'w') as f:
             json.dump(settings, f)
 
-    logger.debug('settings: ' + json.dumps(settings))
     return settings
 
 
@@ -130,7 +129,6 @@ def init_history():
         with open(filepath, 'w') as f:
             json.dump(history, f)
 
-    logger.debug('history: ' + json.dumps(history))
     return history
 
 

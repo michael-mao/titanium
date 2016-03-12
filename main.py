@@ -13,26 +13,26 @@ def main():
 
     t = Thermostat()
 
-    # get and set current temperature
-    current_temperature = Decimal(input('Enter current temperature: '))
-    try:
-        t.current_temperature = current_temperature
-    except errors.ValidationErrorBase as e:
-        logger.error(e)
-
-    # get and set user user temperature range
-    temp_low = Decimal(input('Enter lower bound: '))
-    temp_high = Decimal(input('Enter higher bound: '))
-    try:
-        t.temperature_range = (temp_low, temp_high)
-    except errors.TemperatureValidationError as e:
-        logger.error(e)
+    if utils.on_rpi():
+        t.temperature_range = (Decimal(20), Decimal(22))
     else:
-        gui = GUI(t)
+        # get temperatures from input
+        current_temperature = Decimal(input('Enter current temperature: '))
+        temp_low = Decimal(input('Enter lower bound: '))
+        temp_high = Decimal(input('Enter higher bound: '))
         try:
-            gui.run()
-        finally:
-            gui.stop()
+            t.current_temperature = current_temperature
+            t.temperature_range = (temp_low, temp_high)
+        except errors.TemperatureValidationError as e:
+            logger.error(e)
+
+    gui = GUI(t)
+    try:
+        gui.run()
+    except Exception as e:
+        logger.error(e)
+    finally:
+        gui.stop()
 
 
 if __name__ == "__main__":
