@@ -61,7 +61,7 @@ def evaluate_decision_matrix(matrix):
     logger.debug('total rating is {0}'.format(total_rating))
     logger.debug('total score is {0}'.format(total_score))
 
-    new_state = utils.State.OFF
+    new_state = utils.State.IDLE
     if total_score > config.DM_HEAT_THRESHOLD:
         new_state = utils.State.HEAT
     elif total_score < config.DM_COOL_THRESHOLD:

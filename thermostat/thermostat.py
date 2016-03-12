@@ -24,8 +24,6 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         - All floating point arithmetic should use Decimal type, pass in number as str to maintain precision
     """
 
-    UPDATE_INTERVAL = 5
-
     def __init__(self):
         super().__init__()
         self._settings = OrderedDict(sorted(utils.init_settings().items(), key=lambda t: t[0]))
@@ -33,9 +31,12 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self._current_temperature = Decimal(0)
         self._temperature_range = (Decimal(0), Decimal(0))
         self._on_rpi = utils.on_rpi()
-        self.temperature_increment = Decimal('0.5')
-        self.state = utils.State.OFF
+
         self.logger = getLogger('app.thermostat')
+        self.temperature_offset = Decimal('1.5')
+        self.state = utils.State.IDLE
+        self.last_state_update = time.time() + config.OSCILLATION_DELAY
+
         self.cost_table = None  # must init after thread starts
         self.pubnub = Pubnub(
             publish_key=config.PUBLISH_KEY,
@@ -82,8 +83,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         )
 
         while True:
-            self.update_state()
-            time.sleep(self.UPDATE_INTERVAL)
+            if self.state != utils.State.OFF:
+                self.update_state()
+            time.sleep(config.UPDATE_INTERVAL)
 
     def stop(self):
         """ Exit handler.
@@ -96,6 +98,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.cost_table.close()
         self.logger.info('cleanup completed')
 
+    def toggle_power(self):
+        self.state = utils.State.IDLE if self.state == utils.State.OFF else utils.State.OFF
+
     def update_state(self):
         """ Decision maker.
 
@@ -106,15 +111,20 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             self.current_temperature = sensor.read_temperature()
 
         low, high = self.temperature_range
-        if self.current_temperature < (low - self.temperature_increment):
-            self.state = utils.State.HEAT
-        elif self.current_temperature > (high + self.temperature_increment):
-            self.state = utils.State.COOL
+        if self.current_temperature < (low - self.temperature_offset):
+            new_state = utils.State.HEAT
+        elif self.current_temperature > (high + self.temperature_offset):
+            new_state = utils.State.COOL
         else:
             # within range, make decision
-            self.state = self.make_decision()
+            new_state = self.make_decision()
 
-        self.logger.debug('thermostat state updated to {0}'.format(self.state))
+        # prevent oscillation
+        if (time.time() - self.last_state_update) > config.OSCILLATION_DELAY:
+            if self.state != new_state:
+                self.last_state_update = time.time()
+            self.state = new_state
+            self.logger.debug('thermostat state updated to {0}'.format(self.state))
 
     def make_decision(self):
         params_list = list()
@@ -216,6 +226,26 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         time_block = rounded_dt.strftime('%H:%M')
         self._history[day][time_block] = str(temperature)  # store as str to avoid conversion to JSON float
 
+    def publish_temperatures(self, current=True, range=True):
+        data = {
+            'action': 'temperature_data',
+            'data': {
+                'current_temperature': round(self.current_temperature) if current else None,
+                'temperature_low': round(self.temperature_range_floor) if range else None,
+                'temperature_high': round(self.temperature_range_ceiling) if range else None,
+            }
+        }
+        self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
+        self.logger.debug('published message: {0}'.format(data))
+
+    def publish_settings(self):
+        data = {
+            'action': 'settings_data',
+            'data': utils.prettify_settings(self.settings)
+        }
+        self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
+        self.logger.debug('published message: {0}'.format(data))
+
     def _callback(self, message, channel):
         """ Pubnub message callback.
 
@@ -226,22 +256,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.logger.debug(message)
 
         if message['action'] == 'request_temperatures':
-            data = {
-                'action': 'temperature_data',
-                'data': {
-                    'current_temperature': round(self.current_temperature),
-                    'temperature_low': round(self.temperature_range_floor),
-                    'temperature_high': round(self.temperature_range_ceiling),
-                }
-            }
-            self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
-            self.logger.debug('published message: {0}'.format(data))
+            self.publish_temperatures(range=(message['value'] == 'all'))
         elif message['action'] == 'request_settings':
-            data = {
-                'action': 'settings_data',
-                'data': utils.prettify_settings(self.settings)
-            }
-            self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
+            self.publish_settings()
         elif message['action'] == 'update_temperature_range':
             low = message.get('temperature_low')
             high = message.get('temperature_high')
@@ -287,6 +304,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         key, value = t
         if self._settings.get(key):
             self._settings[key] = value
+            self.publish_settings()
         self.locks['settings'].release()
 
     @property
@@ -311,6 +329,8 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             self.validate_temperature(low)
             self.validate_temperature(high)
             self._temperature_range = t_range
+            # send update
+            self.publish_temperatures(current=False)
         finally:
             self.locks['temperature_range'].release()
 

@@ -23,6 +23,10 @@ THERMOSTAT_ID = 'thermostat'
 # Thermostat parameters
 ##############################
 
+# timing, in seconds
+UPDATE_INTERVAL = 10
+OSCILLATION_DELAY = 120
+
 # bounds for input range
 MIN_TEMPERATURE = 0
 MAX_TEMPERATURE = 35

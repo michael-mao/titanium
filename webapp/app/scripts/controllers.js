@@ -205,7 +205,7 @@ controllers
         .then(function success(isOnline) {
           $scope.thermostatOnline = isOnline;
           if($scope.thermostatOnline) {
-            ControlService.requestTemperatures();
+            ControlService.requestTemperatures(true);
             ControlService.requestSettings();
 
             // HACK to display results quickly

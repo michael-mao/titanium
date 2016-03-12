@@ -54,11 +54,14 @@ services
 
     service.parseMessage = function parseMessage(message) {
       if(message.action == 'temperature_data') {
-        // only initialize range
-        if(!service.temperatures['temperature_low'] && !service.temperatures['temperature_high']) {
-          angular.extend(service.temperatures, message.data);
-        } else {
+        if(message.data['current_temperature']) {
           service.temperatures['current_temperature'] = message.data['current_temperature'];
+        }
+        if(message.data['temperature_low']) {
+          service.temperatures['temperature_low'] = message.data['temperature_low'];
+        }
+        if(message.data['temperature_high']) {
+          service.temperatures['temperature_high'] = message.data['temperature_high'];
         }
       } else if(message.action == 'settings_data') {
         angular.extend(service.settings, message.data);
@@ -99,9 +102,10 @@ services
       return deferred.promise;
     };
 
-    service.requestTemperatures = function requestTemperatures() {
+    service.requestTemperatures = function requestTemperatures(all) {
       var data = {
-        action: 'request_temperatures'
+        action: 'request_temperatures',
+        value: (all ? 'all' : 'current')
       };
       Pubnub.publish({
         channel: $rootScope.currentUser.thermostat_id,
