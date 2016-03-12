@@ -239,6 +239,13 @@ controllers
   ]);
 
 controllers
+  .controller('AnalyticsController', ['$scope',
+    function($scope) {
+      $scope.options.showNav = true;
+    }
+  ]);
+
+controllers
   .controller('HelpController', ['$scope',
     function($scope) {
       $scope.options.showNav = true;

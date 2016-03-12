@@ -35,6 +35,10 @@ app
           templateUrl: 'views/profile.html',
           controller: 'ProfileController'
         })
+        .when('/analytics', {
+          templateUrl: 'views/analytics.html',
+          controller: 'AnalyticsController'
+        })
         .when('/help', {
           templateUrl: 'views/help.html',
           controller: 'HelpController'
