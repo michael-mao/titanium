@@ -265,3 +265,29 @@ def unprettify_setting_name(settings, pretty_name, new_value):
                 else:
                     updated_value[subname] = value[subname]
             return (name, updated_value)
+
+
+def get_history_graph_data(history, dt=None):
+    """ Past 24H history data.
+
+    Used by GUI to graph history.
+
+    :return: list of tuples (time, temperature)
+    """
+    if dt is None:
+        dt = datetime.datetime.now()
+
+    rounded_dt = round_time(dt)
+    day = WeekDay(rounded_dt.weekday()).name
+    day_history = sorted(history[day].items())
+    current_time_block = rounded_dt.strftime('%H:%M')
+
+    data = []
+    for key, value in day_history:
+        if key == current_time_block:
+            break
+        if int(key[3:]) == 0:
+            hour = int(key[:2])
+            temperature = round(decimal.Decimal(value)) if value else 0
+            data.append((hour, temperature))
+    return data

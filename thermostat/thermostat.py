@@ -36,7 +36,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.temperature_offset = Decimal('1.5')
         self.mode = utils.Mode.OFF
         self.state = utils.State.IDLE
-        self.last_state_update = time.time() + config.OSCILLATION_DELAY
+        self.last_state_update = 0
 
         self.cost_table = None  # must init after thread starts
         self.pubnub = Pubnub(

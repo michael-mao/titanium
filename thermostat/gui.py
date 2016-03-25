@@ -40,6 +40,7 @@ class GUI(metaclass=utils.Singleton):
         self.fonts['mode'] = pygame.font.SysFont(self.DEFAULT_FONT, 30)
         self.fonts['state'] = pygame.font.SysFont(self.DEFAULT_FONT, 25)
         self.fonts['external_temperature'] = pygame.font.SysFont(self.DEFAULT_FONT, 40)
+        self.fonts['graph'] = pygame.font.SysFont(self.DEFAULT_FONT, 18)
 
         # load images
         self.images['up_arrow'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'up.png'))
@@ -48,6 +49,7 @@ class GUI(metaclass=utils.Singleton):
         self.images['back_button'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'back.png'))
         self.images['power_off'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'power_off.png'))
         self.images['power_on'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'power_on.png'))
+        self.images['graph'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'graph.png'))
         self.images['clouds'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'clouds.png'))
         self.images['rain'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'rain.png'))
         self.images['clear'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'sun.png'))
@@ -56,14 +58,14 @@ class GUI(metaclass=utils.Singleton):
         self.images['thunderstorm'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'thunder.png'))
 
         # image positions
-        self.positions['current_temperature'] = pygame.Rect(190, 96, 120, 80)
+        self.positions['current_temperature'] = pygame.Rect(190, 96, 120, 60)
         self.positions['low_temp'] = pygame.Rect(66, 106, 70, 45)
         self.positions['high_temp'] = pygame.Rect(357, 106, 70, 45)
         self.positions['low_temp_up'] = pygame.Rect(64, 32, 64, 60)
         self.positions['low_temp_down'] = pygame.Rect(64, 140, 64, 60)
         self.positions['high_temp_up'] = pygame.Rect(352, 32, 64, 60)
         self.positions['high_temp_down'] = pygame.Rect(352, 140, 64, 60)
-        self.positions['settings_menu'] = pygame.Rect(405, 250, 45, 4500)
+        self.positions['settings_menu'] = pygame.Rect(405, 250, 50, 50)
         self.positions['settings_title'] = pygame.Rect(155, 30, 1, 1)
         self.positions['back_button'] = pygame.Rect(168, 256, 150, 35)
         self.positions['power_toggle'] = pygame.Rect(18, 250, 50, 50)
@@ -139,6 +141,86 @@ class GUI(metaclass=utils.Singleton):
                     self.mouse_pos = pygame.mouse.get_pos()
                     if self.positions['back_button'].collidepoint(self.mouse_pos):
                         self.draw_home_screen()
+                        pygame.display.flip()
+                        return
+                    elif self.positions['settings_menu'].collidepoint(self.mouse_pos):
+                        self.history_view()
+
+    def history_view(self):
+        """ History screen.
+
+        Display history graph.
+        Returns when back button is clicked.
+        """
+        self.screen.fill(self.BACKGROUND_COLOUR)
+        self.screen.blit(self.images['back_button'], self.positions['back_button'])
+        self.screen.blit(self.fonts['settings'].render("Past 24 Hours", 1, self.BLACK), (200, 20))
+        self.screen.blit(self.fonts['settings'].render("Temperature", 1, self.BLACK), (10, 20))
+        self.screen.blit(self.fonts['settings'].render("Hour", 1, self.BLACK), (400, 260))
+
+        xaxis_start = (50, 240)
+        xaxis_end = (55, 240)
+        yaxis_start = (50, 240)
+        yaxis_end = (50, 235)
+        clock = pygame.time.Clock()
+
+        def update_x(variable, increment, restricter):
+            new_y = variable[1]
+            if variable[0] == restricter:
+                return variable
+            else:
+                new_x = variable[0] + increment
+                return (new_x, new_y)
+
+        def update_y(variable, increment, restricter):
+            new_x = variable[0]
+            if variable[1] == restricter:
+                return variable
+            else:
+                new_y = variable[1] + increment
+                return (new_x, new_y)
+
+        # every 15 pixels for x axis = 360 for 24 hours
+        # every 15 pixels for x axis = 180 for 12 temperature points
+        history_data = utils.get_history_graph_data(self.thermostat._history)
+        min_temp = min(history_data, key=lambda t: t[1])[1]
+        data_points = []
+        for key, value in history_data:
+            x_coord = 50 + (15 * key)
+            y_coord = 200 - (15 * (value - min_temp))
+            data_points.append((x_coord, y_coord))
+        while xaxis_end[0] != 450 or yaxis_end[1] != 40:
+            clock.tick(200)
+
+            xaxis_end = update_x(xaxis_end, 1, 450)
+            yaxis_end = update_y(yaxis_end, -1, 40)
+            pygame.draw.line(self.screen, self.BLACK, xaxis_start, xaxis_end, 3)
+            pygame.draw.line(self.screen, self.BLACK, yaxis_start, yaxis_end, 3)
+            pygame.draw.lines(self.screen, self.RED, False, data_points, 2)
+
+            # print x axis labels (time)
+            for i in range(24):
+                x = 50 + (15 * i)
+                if i % 2 == 0:
+                    self.screen.blit(self.fonts['graph'].render(str(i), 1, self.BLACK), (x, 242))
+
+            # print y axis labels (temperature)
+            for i in range(10):
+                y = i + min_temp - 1
+                if y % 2 != 0:
+                    self.screen.blit(self.fonts['graph'].render(str(y), 1, self.BLACK), (32, 200-(15*i)))
+
+            pygame.display.flip()
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.stop(shutdown=True)
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    self.mouse_pos = pygame.mouse.get_pos()
+                    if self.positions['back_button'].collidepoint(self.mouse_pos):
+                        self.draw_settings_screen()
+                        self.draw_settings_values()
                         pygame.display.flip()
                         return
 
@@ -229,6 +311,7 @@ class GUI(metaclass=utils.Singleton):
         self.screen.fill(self.BACKGROUND_COLOUR)
         self.screen.blit(self.fonts['settings_title'].render('SETTINGS', 1, self.BLACK), self.positions['settings_title'])
         self.screen.blit(self.images['back_button'], self.positions['back_button'])
+        self.screen.blit(self.images['graph'], self.positions['settings_menu'])
 
         # setting names
         pretty_settings = utils.prettify_settings(self.thermostat.settings)
