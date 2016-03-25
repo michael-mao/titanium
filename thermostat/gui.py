@@ -93,8 +93,10 @@ class GUI(metaclass=utils.Singleton):
                     try:
                         if self.positions['power_toggle'].collidepoint(self.mouse_pos):
                             self.thermostat.toggle_power()
-                        if self.positions['settings_menu'].collidepoint(self.mouse_pos):
+                        elif self.positions['settings_menu'].collidepoint(self.mouse_pos):
                             self.settings_view()
+                        elif self.positions['mode'].collidepoint(self.mouse_pos):
+                            self.thermostat.toggle_mode()
                         elif self.positions['low_temp_up'].collidepoint(self.mouse_pos):
                             low, high = self.thermostat.temperature_range
                             self.thermostat.temperature_range = (low + 1, high)

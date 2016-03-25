@@ -104,6 +104,14 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.state = utils.State.IDLE
         # self.last_state_update = time.time()
 
+    def toggle_mode(self):
+        if self.mode == utils.Mode.AUTO:
+            self.mode = utils.Mode.HEAT
+        elif self.mode == utils.Mode.HEAT:
+            self.mode = utils.Mode.COOL
+        elif self.mode == utils.Mode.COOL:
+            self.mode = utils.Mode.AUTO
+
     def update_state(self):
         """ Decision maker.
 
