@@ -16,6 +16,8 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
     """
     Class to fetch weather data in background as a daemon thread. Uses Open Weather Map API.
     Saves current weather data in the instance. Forecast data is discarded after initial fetch.
+
+    See http://openweathermap.org/weather-conditions for possible weather conditions and icons.
     """
     DEFAULT_FETCH_INTERVAL = 1800  # 30 min
 
@@ -26,6 +28,7 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
             'temperature_high': Decimal(0),
             'temperature_low': Decimal(0),
             'humidity': 0,
+            'status': 'N/A',
         }
         self._location = {
             'city': city,
@@ -72,6 +75,7 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
             self._data['temperature_high'] = Decimal(str(t['temp_max']))
             self._data['temperature_low'] = Decimal(str(t['temp_min']))
             self._data['humidity'] = weather.get_humidity()
+            self._data['status'] = weather.get_status()
             self._last_updated = datetime.datetime.now()
             self.logger.debug('current weather for {0}: {1}'.format(self.location, self._data))
 
@@ -109,6 +113,10 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
     def location(self, l):
         # TODO: validation
         self._location['city'], self._location['country_code'] = l
+
+    @property
+    def status(self):
+        return self._data['status'].lower()
 
     @property
     def temperature(self):
