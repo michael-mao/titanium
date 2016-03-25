@@ -38,6 +38,7 @@ class GUI(metaclass=utils.Singleton):
         self.fonts['settings_title'] = pygame.font.SysFont(self.DEFAULT_FONT, 45)
         self.fonts['settings'] = pygame.font.SysFont(self.DEFAULT_FONT, 20)
         self.fonts['mode'] = pygame.font.SysFont(self.DEFAULT_FONT, 30)
+        self.fonts['state'] = pygame.font.SysFont(self.DEFAULT_FONT, 25)
         self.fonts['external_temperature'] = pygame.font.SysFont(self.DEFAULT_FONT, 40)
 
         # load images
@@ -67,8 +68,9 @@ class GUI(metaclass=utils.Singleton):
         self.positions['back_button'] = pygame.Rect(168, 256, 150, 35)
         self.positions['power_toggle'] = pygame.Rect(18, 250, 50, 50)
         self.positions['external_temp'] = pygame.Rect(185, 180, 60, 50)
-        self.positions['weather_icon'] = pygame.Rect(250, 172, 50, 50)
+        self.positions['weather_icon'] = pygame.Rect(250, 170, 50, 50)
         self.positions['mode'] = pygame.Rect(185, 280, 160, 40)
+        self.positions['state'] = pygame.Rect(205, 65, 80, 20)
 
     def run(self):
         self.thermostat.start()
@@ -187,11 +189,9 @@ class GUI(metaclass=utils.Singleton):
 
         :param update: if true, will update the display immediately
         """
-        # reset
         pygame.draw.rect(self.screen, self.BACKGROUND_COLOUR, self.positions['external_temp'])
         pygame.draw.rect(self.screen, self.BACKGROUND_COLOUR, self.positions['weather_icon'])
 
-        # draw
         external_temp = self.fonts['external_temperature'].render(
             '{0}C'.format(round(self.thermostat.weather_thread.temperature)), 1, self.BLACK)
         weather_icon = self.images.get(self.thermostat.weather_thread.status, self.images['clouds'])
@@ -199,23 +199,28 @@ class GUI(metaclass=utils.Singleton):
         self.screen.blit(weather_icon, self.positions['weather_icon'])
 
         if update is True:
-            pygame.display.update([
-                self.positions['external_temp'],
-                self.positions['weather_icon'],
-            ])
+            pygame.display.update([self.positions['external_temp'], self.positions['weather_icon']])
 
     def draw_mode(self, update=True):
         """
-        Draws the current mode on the home screen.
+        Draws the current mode and state on the home screen.
 
         :param update: if true, will update the display immediately
         """
         pygame.draw.rect(self.screen, self.BACKGROUND_COLOUR, self.positions['mode'])
+        pygame.draw.rect(self.screen, self.BACKGROUND_COLOUR, self.positions['state'])
+
         mode = self.fonts['mode'].render('{0} MODE'.format(self.thermostat.mode), 1, self.BLACK)
+        if self.thermostat.state == utils.State.HEAT:
+            state = self.fonts['state'].render('HEATING', 1, self.RED)
+            self.screen.blit(state, self.positions['state'])
+        elif self.thermostat.state == utils.State.COOL:
+            state = self.fonts['state'].render('COOLING', 1, self.BLUE)
+            self.screen.blit(state, self.positions['state'])
         self.screen.blit(mode, self.positions['mode'])
 
         if update is True:
-            pygame.display.update([self.positions['mode']])
+            pygame.display.update([self.positions['mode'], self.positions['state']])
 
     def draw_settings_screen(self):
         """
