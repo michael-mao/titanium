@@ -33,7 +33,7 @@ class GUI(metaclass=utils.Singleton):
         self.logger = getLogger('app.gui')
 
         # font settings
-        self.fonts['current_temperature'] = pygame.font.SysFont(self.DEFAULT_FONT, 80)
+        self.fonts['current_temperature'] = pygame.font.SysFont(self.DEFAULT_FONT, 100)
         self.fonts['temperature_range'] = pygame.font.SysFont(self.DEFAULT_FONT, 45)
         self.fonts['settings_title'] = pygame.font.SysFont(self.DEFAULT_FONT, 45)
         self.fonts['settings'] = pygame.font.SysFont(self.DEFAULT_FONT, 20)
@@ -58,9 +58,9 @@ class GUI(metaclass=utils.Singleton):
         self.images['thunderstorm'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'thunder.png'))
 
         # image positions
-        self.positions['current_temperature'] = pygame.Rect(190, 96, 120, 60)
-        self.positions['low_temp'] = pygame.Rect(66, 106, 70, 45)
-        self.positions['high_temp'] = pygame.Rect(357, 106, 70, 45)
+        self.positions['current_temperature'] = pygame.Rect(205, 90, 120, 60)
+        self.positions['low_temp'] = pygame.Rect(75, 105, 70, 45)
+        self.positions['high_temp'] = pygame.Rect(365, 105, 70, 45)
         self.positions['low_temp_up'] = pygame.Rect(64, 32, 64, 60)
         self.positions['low_temp_down'] = pygame.Rect(64, 140, 64, 60)
         self.positions['high_temp_up'] = pygame.Rect(352, 32, 64, 60)
@@ -69,9 +69,9 @@ class GUI(metaclass=utils.Singleton):
         self.positions['settings_title'] = pygame.Rect(155, 30, 1, 1)
         self.positions['back_button'] = pygame.Rect(168, 256, 150, 35)
         self.positions['power_toggle'] = pygame.Rect(18, 250, 50, 50)
-        self.positions['external_temp'] = pygame.Rect(185, 180, 60, 50)
+        self.positions['external_temp'] = pygame.Rect(190, 180, 60, 50)
         self.positions['weather_icon'] = pygame.Rect(250, 170, 50, 50)
-        self.positions['mode'] = pygame.Rect(185, 280, 160, 40)
+        self.positions['mode'] = pygame.Rect(185, 270, 135, 20)
         self.positions['state'] = pygame.Rect(205, 65, 80, 20)
 
     def run(self):
@@ -235,6 +235,7 @@ class GUI(metaclass=utils.Singleton):
         self.screen.blit(self.images['down_arrow'], self.positions['high_temp_down'])
         self.screen.blit(self.images['settings_menu'], self.positions['settings_menu'])
         self.screen.blit(self.images['power_off'], self.positions['power_toggle'])
+        pygame.draw.rect(self.screen, self.BLACK, [170, 255, 155, 45], 2)
 
     def draw_temperatures(self, update=True):
         """
@@ -249,11 +250,11 @@ class GUI(metaclass=utils.Singleton):
 
         # render and draw text
         current_temperature = self.fonts['current_temperature'].render(
-            '{0}C'.format(round(self.thermostat.current_temperature)), 1, self.TEMP_TEXT_COLOUR)
+            str(round(self.thermostat.current_temperature)), 1, self.TEMP_TEXT_COLOUR)
         low_temp = self.fonts['temperature_range'].render(
-            '{0}C'.format(round(self.thermostat.temperature_range_floor)), 1, self.TEMP_TEXT_COLOUR)
+            str(round(self.thermostat.temperature_range_floor)), 1, self.TEMP_TEXT_COLOUR)
         high_temp = self.fonts['temperature_range'].render(
-            '{0}C'.format(round(self.thermostat.temperature_range_ceiling)), 1, self.TEMP_TEXT_COLOUR)
+            str(round(self.thermostat.temperature_range_ceiling)), 1, self.TEMP_TEXT_COLOUR)
         self.screen.blit(current_temperature, self.positions['current_temperature'])
         self.screen.blit(low_temp, self.positions['low_temp'])
         self.screen.blit(high_temp, self.positions['high_temp'])
