@@ -34,6 +34,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
         self.logger = getLogger('app.thermostat')
         self.temperature_offset = Decimal('1.5')
+        self.mode = utils.Mode.OFF
         self.state = utils.State.IDLE
         self.last_state_update = time.time() + config.OSCILLATION_DELAY
 
@@ -83,7 +84,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         )
 
         while True:
-            if self.state != utils.State.OFF:
+            if self.mode != utils.Mode.OFF:
                 self.update_state()
             time.sleep(config.UPDATE_INTERVAL)
 
@@ -99,7 +100,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.logger.info('cleanup completed')
 
     def toggle_power(self):
-        self.state = utils.State.IDLE if self.state == utils.State.OFF else utils.State.OFF
+        self.mode = utils.Mode.AUTO if self.mode == utils.Mode.OFF else utils.Mode.OFF
+        self.state = utils.State.IDLE
+        # self.last_state_update = time.time()
 
     def update_state(self):
         """ Decision maker.
@@ -123,7 +126,14 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         if (time.time() - self.last_state_update) > config.OSCILLATION_DELAY:
             if self.state != new_state:
                 self.last_state_update = time.time()
-            self.state = new_state
+
+            # check mode to determine if new state is allowed
+            if self.mode == utils.Mode.HEAT:
+                self.state = new_state if new_state != utils.State.COOL else self.state
+            elif self.mode == utils.Mode.COOL:
+                self.state = new_state if new_state != utils.State.HEAT else self.state
+            else:
+                self.state = new_state
             self.logger.debug('thermostat state updated to {0}'.format(self.state))
 
     def make_decision(self):
@@ -290,8 +300,12 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         return self._on_rpi
 
     @property
+    def is_on(self):
+        return self.mode != utils.Mode.OFF
+
+    @property
     def is_active(self):
-        return self.state != utils.State.OFF
+        return self.state != utils.State.IDLE
 
     @property
     def settings(self):

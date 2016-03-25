@@ -16,8 +16,24 @@ from . import config
 
 @unique
 class State(Enum):
-    OFF = 0
+    """
+    State is the current thermostat action.
+    """
     IDLE = 1
+    HEAT = 2
+    COOL = 3
+
+    def __str__(self):
+        return self.name
+
+
+@unique
+class Mode(Enum):
+    """
+    Mode determines what States are allowed.
+    """
+    OFF = 0
+    AUTO = 1
     HEAT = 2
     COOL = 3
 
