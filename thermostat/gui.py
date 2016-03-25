@@ -35,6 +35,7 @@ class GUI(metaclass=utils.Singleton):
         # font settings
         self.fonts['current_temperature'] = pygame.font.SysFont(self.DEFAULT_FONT, 80)
         self.fonts['temperature_range'] = pygame.font.SysFont(self.DEFAULT_FONT, 45)
+        self.fonts['settings_title'] = pygame.font.SysFont(self.DEFAULT_FONT, 45)
         self.fonts['settings'] = pygame.font.SysFont(self.DEFAULT_FONT, 20)
         self.fonts['mode'] = pygame.font.SysFont(self.DEFAULT_FONT, 30)
         self.fonts['external_temperature'] = pygame.font.SysFont(self.DEFAULT_FONT, 40)
@@ -43,7 +44,6 @@ class GUI(metaclass=utils.Singleton):
         self.images['up_arrow'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'up.png'))
         self.images['down_arrow'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'down.png'))
         self.images['settings_menu'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'gear.png'))
-        self.images['settings_title'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'SettingsHeader.png'))
         self.images['back_button'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'back.png'))
         self.images['power_off'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'power_off.png'))
         self.images['power_on'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'power_on.png'))
@@ -63,7 +63,7 @@ class GUI(metaclass=utils.Singleton):
         self.positions['high_temp_up'] = pygame.Rect(352, 32, 64, 60)
         self.positions['high_temp_down'] = pygame.Rect(352, 140, 64, 60)
         self.positions['settings_menu'] = pygame.Rect(405, 250, 45, 4500)
-        self.positions['settings_title'] = pygame.Rect(154, 0, 1, 1)
+        self.positions['settings_title'] = pygame.Rect(155, 30, 1, 1)
         self.positions['back_button'] = pygame.Rect(168, 256, 150, 35)
         self.positions['power_toggle'] = pygame.Rect(18, 250, 50, 50)
         self.positions['external_temp'] = pygame.Rect(185, 180, 60, 50)
@@ -220,14 +220,14 @@ class GUI(metaclass=utils.Singleton):
         Draws the static elements on the settings screen.
         """
         self.screen.fill(self.BACKGROUND_COLOUR)
-        self.screen.blit(self.images['settings_title'], self.positions['settings_title'])
+        self.screen.blit(self.fonts['settings_title'].render('SETTINGS', 1, self.BLACK), self.positions['settings_title'])
         self.screen.blit(self.images['back_button'], self.positions['back_button'])
 
         # setting names
         pretty_settings = utils.prettify_settings(self.thermostat.settings)
         for i, setting in enumerate(pretty_settings.keys()):
             text = self.fonts['settings'].render(setting, 1, self.BLACK)
-            self.screen.blit(text, (0.1*self.WIDTH, (0.2*self.HEIGHT) + (i*20)))
+            self.screen.blit(text, (0.1*self.WIDTH, (0.25*self.HEIGHT) + (i*20)))
 
     def draw_settings_values(self):
         """
@@ -236,4 +236,4 @@ class GUI(metaclass=utils.Singleton):
         pretty_settings = utils.prettify_settings(self.thermostat.settings)
         for i, value in enumerate(pretty_settings.values()):
             text = self.fonts['settings'].render(str(value), 1, self.BLACK)
-            self.screen.blit(text, (0.6*self.WIDTH, (0.2*self.HEIGHT) + (i*20)))
+            self.screen.blit(text, (0.6*self.WIDTH, (0.25*self.HEIGHT) + (i*20)))
