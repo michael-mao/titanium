@@ -50,6 +50,10 @@ services
       'temperature_low': 0,
       'temperature_high': 0
     };
+    service.status = {
+      mode: null,
+      status: null
+    };
     service.settings = {};
 
     service.parseMessage = function parseMessage(message) {
@@ -63,6 +67,8 @@ services
         if(message.data['temperature_high']) {
           service.temperatures['temperature_high'] = message.data['temperature_high'];
         }
+      } else if(message.action == 'mode_data') {
+        service.status.mode = message.data['mode'];
       } else if(message.action == 'settings_data') {
         angular.extend(service.settings, message.data);
       } else {
@@ -113,6 +119,16 @@ services
       });
     };
 
+    service.requestMode = function requestMode() {
+      var data = {
+        action: 'request_mode'
+      };
+      Pubnub.publish({
+        channel: $rootScope.currentUser.thermostat_id,
+        message: data
+      });
+    };
+
     service.requestSettings = function requestSettings() {
       var data = {
         action: 'request_settings'
@@ -128,6 +144,17 @@ services
         action: 'update_setting',
         setting_name: name,
         setting_value: value
+      };
+      Pubnub.publish({
+        channel: $rootScope.currentUser.thermostat_id,
+        message: data
+      });
+    };
+
+    service.updateMode = function updateMode(mode) {
+      var data = {
+        action: 'update_mode',
+        mode: mode
       };
       Pubnub.publish({
         channel: $rootScope.currentUser.thermostat_id,

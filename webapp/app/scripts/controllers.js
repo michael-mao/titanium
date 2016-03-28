@@ -112,11 +112,12 @@ controllers
       $scope.forms = {};
       $scope.thermostatOnline = false;
       $scope.temperatures = ControlService.temperatures;
+      $scope.status = ControlService.status;
       $scope.settings = ControlService.settings;
       // TODO: disable knobs when offline, make readonly
       $scope.ctKnobOptions = {
         size: 200,
-        unit: 'C',
+        unit: '',
         barWidth: 40,
         trackColor: 'rgba(255,0,0,.1)',
         max: config.MAX_TEMPERATURE,
@@ -132,7 +133,7 @@ controllers
           quantity: config.MAX_TEMPERATURE,
           spaceWidth: 10
         },
-        unit: 'C',
+        unit: '',
         barWidth: 40,
         trackWidth: 25,
         trackColor: 'rgba(0,0,0,.1)',
@@ -185,6 +186,11 @@ controllers
         $scope.settingModal.close();
       };
 
+      $scope.setMode = function setMode(mode) {
+        ControlService.updateMode(mode);
+        $scope.status.mode = mode;
+      };
+
       $scope.updateSetting = function updateSetting(setting) {
         if(!setting || !setting.name || !setting) {
           return;
@@ -206,6 +212,7 @@ controllers
           $scope.thermostatOnline = isOnline;
           if($scope.thermostatOnline) {
             ControlService.requestTemperatures(true);
+            ControlService.requestMode();
             ControlService.requestSettings();
 
             // HACK to display results quickly
