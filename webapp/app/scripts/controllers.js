@@ -70,6 +70,7 @@ controllers
         UserService.login(user.email, user.password)
           .then(function success() {
             console.log('login successful');
+
             $location.path('/dashboard');
           }, function error(data) {
             $scope.forms.login.$setValidity(false);
@@ -173,6 +174,9 @@ controllers
       });
 
       $scope.openModal = function openModal(setting) {
+        if(!$scope.thermostatOnline) {
+          return;
+        }
         $scope.modalSetting = setting;
         $scope.settingModal = $uibModal.open({
           templateUrl: 'views/settingModal.html',
