@@ -70,6 +70,7 @@ controllers
         UserService.login(user.email, user.password)
           .then(function success() {
             console.log('login successful');
+
             $location.path('/dashboard');
           }, function error(data) {
             $scope.forms.login.$setValidity(false);
@@ -112,13 +113,15 @@ controllers
       $scope.forms = {};
       $scope.thermostatOnline = false;
       $scope.temperatures = ControlService.temperatures;
+      $scope.status = ControlService.status;
       $scope.settings = ControlService.settings;
       // TODO: disable knobs when offline, make readonly
       $scope.ctKnobOptions = {
         size: 200,
-        unit: 'C',
+        unit: '',
         barWidth: 40,
-        trackColor: 'rgba(255,0,0,.1)',
+        trackWidth: 40,
+        trackColor: 'rgba(0,0,0,.1)',
         max: config.MAX_TEMPERATURE,
         readOnly: true,
         dynamicOptions: true
@@ -132,10 +135,10 @@ controllers
           quantity: config.MAX_TEMPERATURE,
           spaceWidth: 10
         },
-        unit: 'C',
+        unit: '',
         barWidth: 40,
         trackWidth: 25,
-        trackColor: 'rgba(0,0,0,.1)',
+        trackColor: 'rgba(255,0,0,.1)',
         prevBarColor: 'rgba(0,0,0,.2)',
         max: config.MAX_TEMPERATURE,
         displayPrevious: true,
@@ -172,6 +175,9 @@ controllers
       });
 
       $scope.openModal = function openModal(setting) {
+        if(!$scope.thermostatOnline) {
+          return;
+        }
         $scope.modalSetting = setting;
         $scope.settingModal = $uibModal.open({
           templateUrl: 'views/settingModal.html',
@@ -183,6 +189,11 @@ controllers
       $scope.closeModal = function closeModal() {
         $scope.modalSetting = {};
         $scope.settingModal.close();
+      };
+
+      $scope.setMode = function setMode(mode) {
+        ControlService.updateMode(mode);
+        $scope.status.mode = mode;
       };
 
       $scope.updateSetting = function updateSetting(setting) {
@@ -206,6 +217,7 @@ controllers
           $scope.thermostatOnline = isOnline;
           if($scope.thermostatOnline) {
             ControlService.requestTemperatures(true);
+            ControlService.requestMode();
             ControlService.requestSettings();
 
             // HACK to display results quickly

@@ -34,8 +34,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
         self.logger = getLogger('app.thermostat')
         self.temperature_offset = Decimal('1.5')
+        self.mode = utils.Mode.OFF
         self.state = utils.State.IDLE
-        self.last_state_update = time.time() + config.OSCILLATION_DELAY
+        self.last_state_update = 0
 
         self.cost_table = None  # must init after thread starts
         self.pubnub = Pubnub(
@@ -83,7 +84,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         )
 
         while True:
-            if self.state != utils.State.OFF:
+            if self.mode != utils.Mode.OFF:
                 self.update_state()
             time.sleep(config.UPDATE_INTERVAL)
 
@@ -99,7 +100,22 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.logger.info('cleanup completed')
 
     def toggle_power(self):
-        self.state = utils.State.IDLE if self.state == utils.State.OFF else utils.State.OFF
+        self.mode = utils.Mode.AUTO if self.mode == utils.Mode.OFF else utils.Mode.OFF
+        self.state = utils.State.IDLE
+        # self.last_state_update = time.time()
+        self.publish_mode()
+
+    def toggle_mode(self, mode=None):
+        if isinstance(mode, utils.Mode):
+            self.mode = mode
+        else:
+            if self.mode == utils.Mode.AUTO:
+                self.mode = utils.Mode.HEAT
+            elif self.mode == utils.Mode.HEAT:
+                self.mode = utils.Mode.COOL
+            elif self.mode == utils.Mode.COOL:
+                self.mode = utils.Mode.AUTO
+        self.publish_mode()
 
     def update_state(self):
         """ Decision maker.
@@ -123,7 +139,15 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         if (time.time() - self.last_state_update) > config.OSCILLATION_DELAY:
             if self.state != new_state:
                 self.last_state_update = time.time()
-            self.state = new_state
+
+            # check mode to determine if new state is allowed
+            if self.mode == utils.Mode.HEAT:
+                self.state = new_state if new_state != utils.State.COOL else self.state
+            elif self.mode == utils.Mode.COOL:
+                self.state = new_state if new_state != utils.State.HEAT else self.state
+            else:
+                self.state = new_state
+            self.publish_state()
             self.logger.debug('thermostat state updated to {0}'.format(self.state))
 
     def make_decision(self):
@@ -238,6 +262,26 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
         self.logger.debug('published message: {0}'.format(data))
 
+    def publish_mode(self):
+        data = {
+            'action': 'mode_data',
+            'data': {
+                'mode': str(self.mode).lower()
+            }
+        }
+        self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
+        self.logger.debug('published message: {0}'.format(data))
+
+    def publish_state(self):
+        data = {
+            'action': 'state_data',
+            'data': {
+                'state': str(self.state).lower()
+            }
+        }
+        self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
+        self.logger.debug('published message: {0}'.format(data))
+
     def publish_settings(self):
         data = {
             'action': 'settings_data',
@@ -257,6 +301,8 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
         if message['action'] == 'request_temperatures':
             self.publish_temperatures(range=(message['value'] == 'all'))
+        elif message['action'] == 'request_mode':
+            self.publish_mode()
         elif message['action'] == 'request_settings':
             self.publish_settings()
         elif message['action'] == 'update_temperature_range':
@@ -264,6 +310,11 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             high = message.get('temperature_high')
             if low is not None and high is not None:
                 self.temperature_range = (Decimal(low), Decimal(high))
+        elif message['action'] == 'update_mode':
+            mode = message.get('mode')
+            if mode is not None:
+                mode = utils.Mode[mode.upper()]
+                self.toggle_mode(mode)
         elif message['action'] == 'update_setting':
             name = message.get('setting_name')
             value = message.get('setting_value')
@@ -290,8 +341,12 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         return self._on_rpi
 
     @property
+    def is_on(self):
+        return self.mode != utils.Mode.OFF
+
+    @property
     def is_active(self):
-        return self.state != utils.State.OFF
+        return self.state != utils.State.IDLE
 
     @property
     def settings(self):
