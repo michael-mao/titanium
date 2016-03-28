@@ -69,6 +69,8 @@ services
         }
       } else if(message.action == 'mode_data') {
         service.status.mode = message.data['mode'];
+      } else if(message.action == 'state_data') {
+        service.status.state = message.data['state'];
       } else if(message.action == 'settings_data') {
         angular.extend(service.settings, message.data);
       } else {

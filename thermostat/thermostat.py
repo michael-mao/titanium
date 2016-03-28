@@ -147,6 +147,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
                 self.state = new_state if new_state != utils.State.HEAT else self.state
             else:
                 self.state = new_state
+            self.publish_state()
             self.logger.debug('thermostat state updated to {0}'.format(self.state))
 
     def make_decision(self):
@@ -266,6 +267,16 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             'action': 'mode_data',
             'data': {
                 'mode': str(self.mode).lower()
+            }
+        }
+        self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
+        self.logger.debug('published message: {0}'.format(data))
+
+    def publish_state(self):
+        data = {
+            'action': 'state_data',
+            'data': {
+                'state': str(self.state).lower()
             }
         }
         self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)

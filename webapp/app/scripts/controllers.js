@@ -120,7 +120,8 @@ controllers
         size: 200,
         unit: '',
         barWidth: 40,
-        trackColor: 'rgba(255,0,0,.1)',
+        trackWidth: 40,
+        trackColor: 'rgba(0,0,0,.1)',
         max: config.MAX_TEMPERATURE,
         readOnly: true,
         dynamicOptions: true
@@ -137,7 +138,7 @@ controllers
         unit: '',
         barWidth: 40,
         trackWidth: 25,
-        trackColor: 'rgba(0,0,0,.1)',
+        trackColor: 'rgba(255,0,0,.1)',
         prevBarColor: 'rgba(0,0,0,.2)',
         max: config.MAX_TEMPERATURE,
         displayPrevious: true,
