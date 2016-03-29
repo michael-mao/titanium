@@ -37,7 +37,7 @@ class GUI(metaclass=utils.Singleton):
         self.fonts['temperature_range'] = pygame.font.SysFont(self.DEFAULT_FONT, 45)
         self.fonts['settings_title'] = pygame.font.SysFont(self.DEFAULT_FONT, 45)
         self.fonts['settings'] = pygame.font.SysFont(self.DEFAULT_FONT, 20)
-        self.fonts['mode'] = pygame.font.SysFont(self.DEFAULT_FONT, 30)
+        self.fonts['mode'] = pygame.font.SysFont(self.DEFAULT_FONT, 28)
         self.fonts['state'] = pygame.font.SysFont(self.DEFAULT_FONT, 25)
         self.fonts['external_temperature'] = pygame.font.SysFont(self.DEFAULT_FONT, 40)
         self.fonts['graph'] = pygame.font.SysFont(self.DEFAULT_FONT, 18)
@@ -58,21 +58,21 @@ class GUI(metaclass=utils.Singleton):
         self.images['thunderstorm'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'thunder.png'))
 
         # image positions
-        self.positions['current_temperature'] = pygame.Rect(205, 90, 110, 60)
-        self.positions['low_temp'] = pygame.Rect(75, 105, 50, 45)
-        self.positions['high_temp'] = pygame.Rect(365, 105, 50, 45)
-        self.positions['low_temp_up'] = pygame.Rect(64, 32, 64, 60)
-        self.positions['low_temp_down'] = pygame.Rect(64, 140, 64, 60)
+        self.positions['current_temperature'] = pygame.Rect(185, 55, 120, 120)
+        self.positions['low_temp'] = pygame.Rect(72, 85, 50, 50)
+        self.positions['high_temp'] = pygame.Rect(360, 85, 50, 50)
+        self.positions['low_temp_up'] = pygame.Rect(64, 32, 64, 64)
+        self.positions['low_temp_down'] = pygame.Rect(64, 140, 64, 64)
         self.positions['high_temp_up'] = pygame.Rect(352, 32, 64, 60)
         self.positions['high_temp_down'] = pygame.Rect(352, 140, 64, 60)
         self.positions['settings_menu'] = pygame.Rect(405, 250, 50, 50)
-        self.positions['settings_title'] = pygame.Rect(155, 30, 1, 1)
+        self.positions['settings_title'] = pygame.Rect(150, 15, 1, 1)
         self.positions['back_button'] = pygame.Rect(168, 256, 150, 35)
         self.positions['power_toggle'] = pygame.Rect(18, 250, 50, 50)
-        self.positions['external_temp'] = pygame.Rect(190, 180, 60, 50)
-        self.positions['weather_icon'] = pygame.Rect(250, 170, 50, 50)
-        self.positions['mode'] = pygame.Rect(185, 270, 135, 20)
-        self.positions['state'] = pygame.Rect(205, 65, 80, 20)
+        self.positions['external_temp'] = pygame.Rect(175, 180, 60, 50)
+        self.positions['weather_icon'] = pygame.Rect(255, 182, 50, 50)
+        self.positions['mode'] = pygame.Rect(165, 260, 155, 40)
+        self.positions['state'] = pygame.Rect(195, 20, 105, 40)
 
     def run(self):
         self.thermostat.start()
@@ -98,6 +98,8 @@ class GUI(metaclass=utils.Singleton):
                     self.stop(shutdown=True)
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                     flags = self.screen.get_flags()
+                    pygame.display.quit()
+                    pygame.display.init()
                     if flags:
                         self.screen = pygame.display.set_mode(self.SIZE)
                     else:
@@ -248,7 +250,7 @@ class GUI(metaclass=utils.Singleton):
         self.screen.blit(self.images['down_arrow'], self.positions['high_temp_down'])
         self.screen.blit(self.images['settings_menu'], self.positions['settings_menu'])
         self.screen.blit(self.images['power_off'], self.positions['power_toggle'])
-        pygame.draw.rect(self.screen, self.BLACK, [170, 255, 155, 45], 2)
+        pygame.draw.rect(self.screen, self.BLACK, [150, 250, 180, 55], 2)
 
     def draw_temperatures(self, update=True):
         """
