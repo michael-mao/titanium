@@ -283,11 +283,12 @@ def unprettify_setting_name(settings, pretty_name, new_value):
             return (name, updated_value)
 
 
-def get_history_graph_data(history, dt=None):
+def get_history_graph_data_gui(history, dt=None):
     """ Past 24H history data.
 
     Used by GUI to graph history.
 
+    :param dt: datetime to stop at
     :return: list of tuples (time, temperature)
     """
     if dt is None:
@@ -306,4 +307,27 @@ def get_history_graph_data(history, dt=None):
             hour = int(key[:2])
             temperature = round(decimal.Decimal(value)) if value else 0
             data.append((hour, temperature))
+    return data
+
+
+def get_history_graph_data_webapp(history):
+    """ Hourly history data.
+
+    Used by webapp to graph history.
+
+    :return: list of dicts { day: 1-7, hour: 1-24, value: <temperature>}
+    """
+    data = []
+
+    for day_key in history.keys():
+        day = WeekDay[day_key].value + 1
+        for i in range(24):
+            hour = i + 1
+            time_key = '{0:02d}:00'.format(i)
+            temperature = round(decimal.Decimal(history[day_key][time_key]))
+            data.append({
+                'day': str(day),
+                'hour': str(hour),
+                'value': str(temperature),
+            })
     return data
