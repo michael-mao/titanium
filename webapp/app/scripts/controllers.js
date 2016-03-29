@@ -96,14 +96,14 @@ controllers
   .controller('DashboardController', ['$scope', '$rootScope', '$location', '$interval', '$timeout', '$uibModal', 'localStorageService', 'config', 'UserService', 'ControlService',
     function($scope, $rootScope, $location, $interval, $timeout, $uibModal, localStorageService, config, UserService, ControlService) {
       var temperaturePoll = $interval(function() {
-        if($scope.thermostatOnline) {
+        if($rootScope.thermostatOnline) {
           ControlService.requestTemperatures();
         }
       }, 30000); // 30s;
       var onlinePoll = $interval(function() {
         ControlService.thermostatOnline()
           .then(function success(isOnline) {
-            $scope.thermostatOnline = isOnline;
+            $rootScope.thermostatOnline = isOnline;
           });
       }, 60000); // 1min
       var updateRangeTimeout = null;
@@ -114,7 +114,6 @@ controllers
 
       $scope.options.showNav = true;
       $scope.forms = {};
-      $scope.thermostatOnline = false;
       $scope.temperatures = ControlService.temperatures;
       $scope.status = ControlService.status;
       $scope.settings = ControlService.settings;
@@ -151,7 +150,7 @@ controllers
       $scope.resetUpdateTimeout = function resetUpdateTimeout() {
         $timeout.cancel(updateRangeTimeout);
         updateRangeTimeout = $timeout(function() {
-          if($scope.thermostatOnline) {
+          if($rootScope.thermostatOnline) {
             ControlService.updateTemperatureRange($scope.temperatures['temperature_low'], $scope.temperatures['temperature_high']);
           }
         }, updateRangeDelay);
@@ -178,7 +177,7 @@ controllers
       });
 
       $scope.openModal = function openModal(setting) {
-        if(!$scope.thermostatOnline || !changeableSettings[setting.name]) {
+        if(!$rootScope.thermostatOnline || !changeableSettings[setting.name]) {
           return;
         }
         $scope.modalSetting = setting;
@@ -217,8 +216,8 @@ controllers
       ControlService.connect($rootScope.currentUser.thermostat_id)
         .then(ControlService.thermostatOnline)
         .then(function success(isOnline) {
-          $scope.thermostatOnline = isOnline;
-          if($scope.thermostatOnline) {
+          $rootScope.thermostatOnline = isOnline;
+          if($rootScope.thermostatOnline) {
             ControlService.requestTemperatures(true);
             ControlService.requestMode();
             ControlService.requestSettings();

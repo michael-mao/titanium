@@ -61,6 +61,7 @@ app
         subscribe_key: config.SUBSCRIBE_KEY
       });
 
+      $rootScope.thermostatOnline = false;
       $rootScope.currentUser = localStorageService.get('user');
       $rootScope.$on('$routeChangeStart', function(event, next, current) {
         if(!$rootScope.currentUser) {

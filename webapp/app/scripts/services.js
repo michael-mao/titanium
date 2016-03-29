@@ -14,6 +14,7 @@ services
       return $http.post('/api/authenticate', data)
         .then(function success(data) {
           $rootScope.currentUser = angular.copy(data.data);
+          // TODO: set expiration for login
           localStorageService.set('user', $rootScope.currentUser);
           return $q.when($rootScope.currentUser);
         });
