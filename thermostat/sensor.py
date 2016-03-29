@@ -18,8 +18,12 @@ def init_sensor():
 
 
 def read_temperature():
-    device_dir = glob.glob('/sys/bus/w1/devices/28-0315909d1dff')
-    device = device_dir[0] + '/w1_slave'
+    try:
+        device_dir = glob.glob('/sys/bus/w1/devices/28-0315909d1dff')
+        device = device_dir[0] + '/w1_slave'
+    except IndexError:
+        logger.error('sensor not connected')
+        return Decimal(-1)
 
     with open(device, 'r') as f:
         sensor = f.readlines()
@@ -34,4 +38,4 @@ def read_temperature():
         return temperature
     else:
         logger.error('sensor CRC check failed')
-        return None
+        return Decimal(-1)

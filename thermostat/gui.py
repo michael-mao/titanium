@@ -37,7 +37,7 @@ class GUI(metaclass=utils.Singleton):
         self.fonts['temperature_range'] = pygame.font.SysFont(self.DEFAULT_FONT, 45)
         self.fonts['settings_title'] = pygame.font.SysFont(self.DEFAULT_FONT, 45)
         self.fonts['settings'] = pygame.font.SysFont(self.DEFAULT_FONT, 20)
-        self.fonts['mode'] = pygame.font.SysFont(self.DEFAULT_FONT, 30)
+        self.fonts['mode'] = pygame.font.SysFont(self.DEFAULT_FONT, 28)
         self.fonts['state'] = pygame.font.SysFont(self.DEFAULT_FONT, 25)
         self.fonts['external_temperature'] = pygame.font.SysFont(self.DEFAULT_FONT, 40)
         self.fonts['graph'] = pygame.font.SysFont(self.DEFAULT_FONT, 18)
@@ -58,27 +58,49 @@ class GUI(metaclass=utils.Singleton):
         self.images['thunderstorm'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'thunder.png'))
 
         # image positions
-        self.positions['current_temperature'] = pygame.Rect(205, 90, 120, 60)
-        self.positions['low_temp'] = pygame.Rect(75, 105, 70, 45)
-        self.positions['high_temp'] = pygame.Rect(365, 105, 70, 45)
-        self.positions['low_temp_up'] = pygame.Rect(64, 32, 64, 60)
-        self.positions['low_temp_down'] = pygame.Rect(64, 140, 64, 60)
-        self.positions['high_temp_up'] = pygame.Rect(352, 32, 64, 60)
-        self.positions['high_temp_down'] = pygame.Rect(352, 140, 64, 60)
-        self.positions['settings_menu'] = pygame.Rect(405, 250, 50, 50)
-        self.positions['settings_title'] = pygame.Rect(155, 30, 1, 1)
-        self.positions['back_button'] = pygame.Rect(168, 256, 150, 35)
-        self.positions['power_toggle'] = pygame.Rect(18, 250, 50, 50)
-        self.positions['external_temp'] = pygame.Rect(190, 180, 60, 50)
-        self.positions['weather_icon'] = pygame.Rect(250, 170, 50, 50)
-        self.positions['mode'] = pygame.Rect(185, 270, 135, 20)
-        self.positions['state'] = pygame.Rect(205, 65, 80, 20)
+        if utils.on_rpi():
+            self.positions['current_temperature'] = pygame.Rect(185, 55, 120, 120)
+            self.positions['low_temp'] = pygame.Rect(72, 85, 50, 50)
+            self.positions['high_temp'] = pygame.Rect(360, 85, 50, 50)
+            self.positions['low_temp_up'] = pygame.Rect(64, 32, 64, 64)
+            self.positions['low_temp_down'] = pygame.Rect(64, 140, 64, 64)
+            self.positions['high_temp_up'] = pygame.Rect(352, 32, 64, 60)
+            self.positions['high_temp_down'] = pygame.Rect(352, 140, 64, 60)
+            self.positions['settings_menu'] = pygame.Rect(405, 250, 50, 50)
+            self.positions['settings_title'] = pygame.Rect(150, 15, 1, 1)
+            self.positions['back_button'] = pygame.Rect(168, 256, 150, 35)
+            self.positions['power_toggle'] = pygame.Rect(18, 250, 50, 50)
+            self.positions['external_temp'] = pygame.Rect(175, 180, 60, 50)
+            self.positions['weather_icon'] = pygame.Rect(255, 182, 50, 50)
+            self.positions['mode'] = pygame.Rect(165, 260, 155, 40)
+            self.positions['state'] = pygame.Rect(195, 20, 105, 40)
+        else:
+            self.positions['current_temperature'] = pygame.Rect(205, 90, 120, 60)
+            self.positions['low_temp'] = pygame.Rect(75, 105, 70, 45)
+            self.positions['high_temp'] = pygame.Rect(365, 105, 70, 45)
+            self.positions['low_temp_up'] = pygame.Rect(64, 32, 64, 60)
+            self.positions['low_temp_down'] = pygame.Rect(64, 140, 64, 60)
+            self.positions['high_temp_up'] = pygame.Rect(352, 32, 64, 60)
+            self.positions['high_temp_down'] = pygame.Rect(352, 140, 64, 60)
+            self.positions['settings_menu'] = pygame.Rect(405, 250, 50, 50)
+            self.positions['settings_title'] = pygame.Rect(155, 30, 1, 1)
+            self.positions['back_button'] = pygame.Rect(168, 256, 150, 35)
+            self.positions['power_toggle'] = pygame.Rect(18, 250, 50, 50)
+            self.positions['external_temp'] = pygame.Rect(190, 180, 60, 50)
+            self.positions['weather_icon'] = pygame.Rect(250, 170, 50, 50)
+            self.positions['mode'] = pygame.Rect(185, 270, 135, 20)
+            self.positions['state'] = pygame.Rect(205, 65, 80, 20)
 
     def run(self):
         self.thermostat.start()
 
         # create window
-        self.screen = pygame.display.set_mode(self.SIZE)
+        if utils.on_rpi():
+            self.screen = pygame.display.set_mode(self.SIZE, pygame.FULLSCREEN)
+            pygame.mouse.set_visible(False)
+        else:
+            self.screen = pygame.display.set_mode(self.SIZE)
+
         self.draw_home_screen()
         pygame.display.flip()
 
@@ -91,6 +113,16 @@ class GUI(metaclass=utils.Singleton):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.stop(shutdown=True)
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                    flags = self.screen.get_flags()
+                    pygame.display.quit()
+                    pygame.display.init()
+                    if flags:
+                        self.screen = pygame.display.set_mode(self.SIZE)
+                    else:
+                        self.screen = pygame.display.set_mode(self.SIZE, pygame.FULLSCREEN)
+                    self.draw_home_screen()
+                    pygame.display.flip()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.mouse_pos = pygame.mouse.get_pos()
 
@@ -159,26 +191,9 @@ class GUI(metaclass=utils.Singleton):
         self.screen.blit(self.fonts['settings'].render("Hour", 1, self.BLACK), (400, 260))
 
         xaxis_start = (50, 240)
-        xaxis_end = (55, 240)
+        xaxis_end = (450, 240)
         yaxis_start = (50, 240)
-        yaxis_end = (50, 235)
-        clock = pygame.time.Clock()
-
-        def update_x(variable, increment, restricter):
-            new_y = variable[1]
-            if variable[0] == restricter:
-                return variable
-            else:
-                new_x = variable[0] + increment
-                return (new_x, new_y)
-
-        def update_y(variable, increment, restricter):
-            new_x = variable[0]
-            if variable[1] == restricter:
-                return variable
-            else:
-                new_y = variable[1] + increment
-                return (new_x, new_y)
+        yaxis_end = (50, 50)
 
         # every 15 pixels for x axis = 360 for 24 hours
         # every 15 pixels for x axis = 180 for 12 temperature points
@@ -189,28 +204,24 @@ class GUI(metaclass=utils.Singleton):
             x_coord = 50 + (15 * key)
             y_coord = 200 - (15 * (value - min_temp))
             data_points.append((x_coord, y_coord))
-        while xaxis_end[0] != 450 or yaxis_end[1] != 40:
-            clock.tick(200)
 
-            xaxis_end = update_x(xaxis_end, 1, 450)
-            yaxis_end = update_y(yaxis_end, -1, 40)
-            pygame.draw.line(self.screen, self.BLACK, xaxis_start, xaxis_end, 3)
-            pygame.draw.line(self.screen, self.BLACK, yaxis_start, yaxis_end, 3)
-            pygame.draw.lines(self.screen, self.RED, False, data_points, 2)
+        pygame.draw.line(self.screen, self.BLACK, xaxis_start, xaxis_end, 3)
+        pygame.draw.line(self.screen, self.BLACK, yaxis_start, yaxis_end, 3)
+        pygame.draw.lines(self.screen, self.RED, False, data_points, 2)
 
-            # print x axis labels (time)
-            for i in range(24):
-                x = 50 + (15 * i)
-                if i % 2 == 0:
-                    self.screen.blit(self.fonts['graph'].render(str(i), 1, self.BLACK), (x, 242))
+        # print x axis labels (time)
+        for i in range(24):
+            x = 50 + (15 * i)
+            if i % 2 == 0:
+                self.screen.blit(self.fonts['graph'].render(str(i), 1, self.BLACK), (x, 242))
 
-            # print y axis labels (temperature)
-            for i in range(10):
-                y = i + min_temp - 1
-                if y % 2 != 0:
-                    self.screen.blit(self.fonts['graph'].render(str(y), 1, self.BLACK), (32, 200-(15*i)))
+        # print y axis labels (temperature)
+        for i in range(10):
+            y = i + min_temp - 1
+            if y % 2 != 0:
+                self.screen.blit(self.fonts['graph'].render(str(y), 1, self.BLACK), (32, 200-(15*i)))
 
-            pygame.display.flip()
+        pygame.display.flip()
 
         while True:
             for event in pygame.event.get():
@@ -235,7 +246,7 @@ class GUI(metaclass=utils.Singleton):
         self.screen.blit(self.images['down_arrow'], self.positions['high_temp_down'])
         self.screen.blit(self.images['settings_menu'], self.positions['settings_menu'])
         self.screen.blit(self.images['power_off'], self.positions['power_toggle'])
-        pygame.draw.rect(self.screen, self.BLACK, [170, 255, 155, 45], 2)
+        pygame.draw.rect(self.screen, self.BLACK, [150, 250, 180, 55], 2)
 
     def draw_temperatures(self, update=True):
         """
