@@ -9,6 +9,8 @@ import datetime
 import decimal
 import urllib.request
 
+import RPi.GPIO as GPIO
+
 from enum import Enum, unique
 
 from . import config
@@ -96,6 +98,20 @@ def init_context():
     decimal.DefaultContext.prec = 9
     decimal.DefaultContext.rounding = decimal.ROUND_HALF_UP  # >=0.5 rounds away from zero
     decimal.setcontext(decimal.DefaultContext)
+
+
+def init_rpi():
+    """ Init Raspberry Pi pins.
+
+    :return: None
+    """
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(config.FAN_PIN, GPIO.OUT)
+    GPIO.setup(config.HEAT_PIN, GPIO.OUT)
+    GPIO.setup(config.COOL_PIN, GPIO.OUT)
+    GPIO.output(config.FAN_PIN, config.RELAY_OFF)
+    GPIO.output(config.HEAT_PIN, config.RELAY_OFF)
+    GPIO.output(config.COOL_PIN, config.RELAY_OFF)
 
 
 def init_settings():
