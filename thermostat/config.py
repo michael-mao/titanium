@@ -34,8 +34,8 @@ MAX_TEMPERATURE = 35
 # decision matrix thresholds, within range(-1, 1)
 # -1              COOL_THRESHOLD      HEAT_THRESHOLD          1
 # --------COOL--------|--------OFF--------|--------HEAT--------
-DM_HEAT_THRESHOLD = Decimal('0.5')
-DM_COOL_THRESHOLD = Decimal('-0.5')
+DM_HEAT_THRESHOLD = Decimal('0.45')
+DM_COOL_THRESHOLD = Decimal('-0.45')
 
 # decision matrix parameters and their weighting, weightings must sum to 1
 DM_WEIGHTINGS = {
@@ -45,6 +45,7 @@ DM_WEIGHTINGS = {
     'energy_cost': Decimal('0.2'),
 }
 
+SCORE_MODIFIER = Decimal('1.5')
 
 ##############################
 # Raspberry Pi

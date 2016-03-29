@@ -58,6 +58,7 @@ def evaluate_decision_matrix(matrix):
     for key, value in matrix.items():
         score = reduce(lambda weight, rating: weight*(rating/total_rating), value)
         total_score += score
+    total_score *= config.SCORE_MODIFIER
     logger.debug('total rating is {0}'.format(total_rating))
     logger.debug('total score is {0}'.format(total_score))
 

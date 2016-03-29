@@ -159,13 +159,13 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
         # TODO: likely needs an additional multiplier to amplify difference
         # TODO: score is always max when this is the only parameter in DM
-        rating = self.temperature_range_equilibrium - self.current_temperature
+        rating = (self.temperature_range_equilibrium - self.current_temperature) * (self.temperature_range_ceiling - self.temperature_range_floor)
         params_list.append(('internal_temperature', rating))
 
         # use external temperature if the data is recent
         # TODO: factor in external humidity
         if (datetime.datetime.now() - self.weather_thread.last_updated).total_seconds() < 3600:
-            rating = self.temperature_range_ceiling - self.weather_thread.temperature
+            rating = (self.temperature_range_ceiling - self.weather_thread.temperature) / 10
             params_list.append(('external_temperature', rating))
 
         # use history if the data exists
@@ -439,6 +439,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
 
     @property
     def temperature_range_equilibrium(self):
+        # DEMO value
+        return self.temperature_range_ceiling
+
         # biased towards range ceiling
         low, high = self.temperature_range
         bias = (high - low) / 4
