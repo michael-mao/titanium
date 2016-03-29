@@ -247,8 +247,6 @@ controllers
           width = 960 - margin.left - margin.right,
           height = 430 - margin.top - margin.bottom,
           gridSize = Math.floor(width / 24),
-          legendElementWidth = gridSize*2,
-          buckets = 9,
           colors = ["#4575b4","#74add1","#abd9e9","#e0f3f8","#fee090","#fdae61","#f46d43","#d73027"],
           days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
           times = [
@@ -292,6 +290,10 @@ controllers
               return d.day + ':' + d.hour;
             });
 
+          var tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
           cards.append("title");
 
           cards.enter().append("rect")
@@ -306,7 +308,21 @@ controllers
             .attr("class", "hour bordered")
             .attr("width", gridSize)
             .attr("height", gridSize)
-            .style("fill", colors[0]);
+            .style("fill", colors[0])
+            // TODO: improve tooltip
+            .on("mouseover", function(d) {
+              tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+              tooltip.html('Temp: ' + d.value)
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+              })
+            .on("mouseout", function(d) {
+              tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+            });
 
           cards.transition().duration(1000)
             .style("fill", function (d) {
