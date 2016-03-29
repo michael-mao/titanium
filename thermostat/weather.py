@@ -113,6 +113,7 @@ class WeatherAPI(threading.Thread, metaclass=utils.Singleton):
     def location(self, l):
         # TODO: validation
         self._location['city'], self._location['country_code'] = l
+        self.get_current_weather()
 
     @property
     def status(self):

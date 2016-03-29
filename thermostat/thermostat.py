@@ -358,6 +358,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.locks['settings'].acquire(False)
         key, value = t
         if self._settings.get(key):
+            # TODO: make country code changeable
+            if key == 'city':
+                self.weather_thread.location = (value, self.weather_thread._location['country_code'])
             self._settings[key] = value
             self.publish_settings()
         self.locks['settings'].release()
