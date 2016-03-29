@@ -58,9 +58,9 @@ class GUI(metaclass=utils.Singleton):
         self.images['thunderstorm'] = pygame.image.load(os.path.join(config.ASSETS_DIR, 'thunder.png'))
 
         # image positions
-        self.positions['current_temperature'] = pygame.Rect(205, 90, 120, 60)
-        self.positions['low_temp'] = pygame.Rect(75, 105, 70, 45)
-        self.positions['high_temp'] = pygame.Rect(365, 105, 70, 45)
+        self.positions['current_temperature'] = pygame.Rect(205, 90, 110, 60)
+        self.positions['low_temp'] = pygame.Rect(75, 105, 50, 45)
+        self.positions['high_temp'] = pygame.Rect(365, 105, 50, 45)
         self.positions['low_temp_up'] = pygame.Rect(64, 32, 64, 60)
         self.positions['low_temp_down'] = pygame.Rect(64, 140, 64, 60)
         self.positions['high_temp_up'] = pygame.Rect(352, 32, 64, 60)
@@ -78,7 +78,11 @@ class GUI(metaclass=utils.Singleton):
         self.thermostat.start()
 
         # create window
-        self.screen = pygame.display.set_mode(self.SIZE)
+        if utils.on_rpi():
+            self.screen = pygame.display.set_mode(self.SIZE, pygame.FULLSCREEN)
+        else:
+            self.screen = pygame.display.set_mode(self.SIZE)
+
         self.draw_home_screen()
         pygame.display.flip()
 
@@ -91,6 +95,14 @@ class GUI(metaclass=utils.Singleton):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.stop(shutdown=True)
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                    flags = self.screen.get_flags()
+                    if flags:
+                        self.screen = pygame.display.set_mode(self.SIZE)
+                    else:
+                        self.screen = pygame.display.set_mode(self.SIZE, pygame.FULLSCREEN)
+                    self.draw_home_screen()
+                    pygame.display.flip()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.mouse_pos = pygame.mouse.get_pos()
 
