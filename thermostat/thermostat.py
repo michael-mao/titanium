@@ -12,6 +12,9 @@ from pubnub import Pubnub
 
 from . import errors, utils, weather, sensor, sql, config, decision
 
+if utils.on_rpi():
+    import RPi.GPIO as GPIO
+
 
 class Thermostat(threading.Thread, metaclass=utils.Singleton):
     """ Main class.
@@ -31,11 +34,11 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self._current_temperature = Decimal(0)
         self._temperature_range = (Decimal(0), Decimal(0))
         self._on_rpi = utils.on_rpi()
+        self._mode = utils.Mode.OFF
+        self._state = utils.State.IDLE
 
         self.logger = getLogger('app.thermostat')
         self.temperature_offset = Decimal('1.5')
-        self.mode = utils.Mode.OFF
-        self.state = utils.State.IDLE
         self.last_state_update = 0
 
         self.cost_table = None  # must init after thread starts
@@ -65,8 +68,9 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         # initialize db
         self.cost_table = sql.CostTable()
 
-        # initialize sensor
+        # initialize sensor and pins
         if self.on_rpi:
+            utils.init_rpi()
             sensor.init_sensor()
             self.current_temperature = sensor.read_temperature()
 
@@ -347,6 +351,39 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
     @property
     def is_active(self):
         return self.state != utils.State.IDLE
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode):
+        if self.on_rpi and mode == utils.Mode.OFF:
+            GPIO.output(config.FAN_PIN, config.RELAY_OFF)
+            GPIO.output(config.HEAT_PIN, config.RELAY_OFF)
+            GPIO.output(config.COOL_PIN, config.RELAY_OFF)
+        self._mode = mode
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        if self.on_rpi:
+            if state == utils.State.IDLE:
+                GPIO.output(config.FAN_PIN, config.RELAY_OFF)
+                GPIO.output(config.HEAT_PIN, config.RELAY_OFF)
+                GPIO.output(config.COOL_PIN, config.RELAY_OFF)
+            elif state == utils.State.HEAT:
+                GPIO.output(config.FAN_PIN, config.RELAY_ON)
+                GPIO.output(config.HEAT_PIN, config.RELAY_ON)
+                GPIO.output(config.COOL_PIN, config.RELAY_OFF)
+            elif state == utils.State.COOL:
+                GPIO.output(config.FAN_PIN, config.RELAY_ON)
+                GPIO.output(config.HEAT_PIN, config.RELAY_OFF)
+                GPIO.output(config.COOL_PIN, config.RELAY_ON)
+        self._state = state
 
     @property
     def settings(self):

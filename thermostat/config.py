@@ -47,6 +47,19 @@ DM_WEIGHTINGS = {
 
 
 ##############################
+# Raspberry Pi
+##############################
+
+# relay is active low
+RELAY_ON = False
+RELAY_OFF = True
+
+# pins, GPIO.BCM mode
+FAN_PIN = 13
+HEAT_PIN = 12
+COOL_PIN = 16
+
+##############################
 # Files and Directories
 ##############################
 

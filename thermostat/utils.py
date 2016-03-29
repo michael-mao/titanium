@@ -98,6 +98,22 @@ def init_context():
     decimal.setcontext(decimal.DefaultContext)
 
 
+def init_rpi():
+    """ Init Raspberry Pi pins.
+
+    :return: None
+    """
+    import RPi.GPIO as GPIO
+
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(config.FAN_PIN, GPIO.OUT)
+    GPIO.setup(config.HEAT_PIN, GPIO.OUT)
+    GPIO.setup(config.COOL_PIN, GPIO.OUT)
+    GPIO.output(config.FAN_PIN, config.RELAY_OFF)
+    GPIO.output(config.HEAT_PIN, config.RELAY_OFF)
+    GPIO.output(config.COOL_PIN, config.RELAY_OFF)
+
+
 def init_settings():
     """ Set up settings file.
 
