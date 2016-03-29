@@ -108,6 +108,9 @@ controllers
       }, 60000); // 1min
       var updateRangeTimeout = null;
       var updateRangeDelay = 5000; // 5s
+      var changeableSettings = {
+        'City': true
+      };
 
       $scope.options.showNav = true;
       $scope.forms = {};
@@ -175,7 +178,7 @@ controllers
       });
 
       $scope.openModal = function openModal(setting) {
-        if(!$scope.thermostatOnline) {
+        if(!$scope.thermostatOnline || !changeableSettings[setting.name]) {
           return;
         }
         $scope.modalSetting = setting;
