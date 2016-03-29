@@ -191,26 +191,9 @@ class GUI(metaclass=utils.Singleton):
         self.screen.blit(self.fonts['settings'].render("Hour", 1, self.BLACK), (400, 260))
 
         xaxis_start = (50, 240)
-        xaxis_end = (55, 240)
+        xaxis_end = (450, 240)
         yaxis_start = (50, 240)
-        yaxis_end = (50, 235)
-        clock = pygame.time.Clock()
-
-        def update_x(variable, increment, restricter):
-            new_y = variable[1]
-            if variable[0] == restricter:
-                return variable
-            else:
-                new_x = variable[0] + increment
-                return (new_x, new_y)
-
-        def update_y(variable, increment, restricter):
-            new_x = variable[0]
-            if variable[1] == restricter:
-                return variable
-            else:
-                new_y = variable[1] + increment
-                return (new_x, new_y)
+        yaxis_end = (50, 50)
 
         # every 15 pixels for x axis = 360 for 24 hours
         # every 15 pixels for x axis = 180 for 12 temperature points
@@ -221,28 +204,24 @@ class GUI(metaclass=utils.Singleton):
             x_coord = 50 + (15 * key)
             y_coord = 200 - (15 * (value - min_temp))
             data_points.append((x_coord, y_coord))
-        while xaxis_end[0] != 450 or yaxis_end[1] != 40:
-            clock.tick(200)
 
-            xaxis_end = update_x(xaxis_end, 1, 450)
-            yaxis_end = update_y(yaxis_end, -1, 40)
-            pygame.draw.line(self.screen, self.BLACK, xaxis_start, xaxis_end, 3)
-            pygame.draw.line(self.screen, self.BLACK, yaxis_start, yaxis_end, 3)
-            pygame.draw.lines(self.screen, self.RED, False, data_points, 2)
+        pygame.draw.line(self.screen, self.BLACK, xaxis_start, xaxis_end, 3)
+        pygame.draw.line(self.screen, self.BLACK, yaxis_start, yaxis_end, 3)
+        pygame.draw.lines(self.screen, self.RED, False, data_points, 2)
 
-            # print x axis labels (time)
-            for i in range(24):
-                x = 50 + (15 * i)
-                if i % 2 == 0:
-                    self.screen.blit(self.fonts['graph'].render(str(i), 1, self.BLACK), (x, 242))
+        # print x axis labels (time)
+        for i in range(24):
+            x = 50 + (15 * i)
+            if i % 2 == 0:
+                self.screen.blit(self.fonts['graph'].render(str(i), 1, self.BLACK), (x, 242))
 
-            # print y axis labels (temperature)
-            for i in range(10):
-                y = i + min_temp - 1
-                if y % 2 != 0:
-                    self.screen.blit(self.fonts['graph'].render(str(y), 1, self.BLACK), (32, 200-(15*i)))
+        # print y axis labels (temperature)
+        for i in range(10):
+            y = i + min_temp - 1
+            if y % 2 != 0:
+                self.screen.blit(self.fonts['graph'].render(str(y), 1, self.BLACK), (32, 200-(15*i)))
 
-            pygame.display.flip()
+        pygame.display.flip()
 
         while True:
             for event in pygame.event.get():
