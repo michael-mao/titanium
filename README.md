@@ -11,6 +11,7 @@ Hardware:
 - Raspberry Pi
 - DS18b20 digital temperature sensor
 - 3.5" touchscreen
+- Relay module
 
 ## Thermostat
 In the root project directory, install the python dependencies with:
