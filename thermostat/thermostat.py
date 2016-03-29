@@ -38,7 +38,7 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self._state = utils.State.IDLE
 
         self.logger = getLogger('app.thermostat')
-        self.temperature_offset = Decimal('1.5')
+        self.temperature_offset = Decimal('0.8')  # DEMO value, original Decimal('1.5')
         self.last_state_update = 0
 
         self.cost_table = None  # must init after thread starts
