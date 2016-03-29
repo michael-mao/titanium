@@ -197,7 +197,7 @@ class GUI(metaclass=utils.Singleton):
 
         # every 15 pixels for x axis = 360 for 24 hours
         # every 15 pixels for x axis = 180 for 12 temperature points
-        history_data = utils.get_history_graph_data(self.thermostat._history)
+        history_data = utils.get_history_graph_data_gui(self.thermostat._history)
         min_temp = min(history_data, key=lambda t: t[1])[1]
         data_points = []
         for key, value in history_data:

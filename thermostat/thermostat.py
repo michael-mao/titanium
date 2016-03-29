@@ -294,6 +294,13 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
         self.logger.debug('published message: {0}'.format(data))
 
+    def publish_history(self):
+        data = {
+            'action': 'history_data',
+            'data': utils.get_history_graph_data_webapp(self._history)
+        }
+        self.pubnub.publish(config.THERMOSTAT_ID, data, error=self._error)
+
     def _callback(self, message, channel):
         """ Pubnub message callback.
 
@@ -309,6 +316,8 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
             self.publish_mode()
         elif message['action'] == 'request_settings':
             self.publish_settings()
+        elif message['action'] == 'request_history':
+            self.publish_history()
         elif message['action'] == 'update_temperature_range':
             low = message.get('temperature_low')
             high = message.get('temperature_high')

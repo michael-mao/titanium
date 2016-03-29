@@ -56,6 +56,7 @@ services
       status: null
     };
     service.settings = {};
+    service.history = [];
 
     service.parseMessage = function parseMessage(message) {
       if(message.action == 'temperature_data') {
@@ -74,6 +75,8 @@ services
         service.status.state = message.data['state'];
       } else if(message.action == 'settings_data') {
         angular.extend(service.settings, message.data);
+      } else if(message.action == 'history_data') {
+        service.history = message.data;
       } else {
         // unexpected message type
         console.log(message);
@@ -135,6 +138,16 @@ services
     service.requestSettings = function requestSettings() {
       var data = {
         action: 'request_settings'
+      };
+      Pubnub.publish({
+        channel: $rootScope.currentUser.thermostat_id,
+        message: data
+      });
+    };
+
+    service.requestHistory = function requestHistory() {
+      var data = {
+        action: 'request_history'
       };
       Pubnub.publish({
         channel: $rootScope.currentUser.thermostat_id,
