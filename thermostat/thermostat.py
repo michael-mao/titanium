@@ -34,11 +34,11 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
         self._current_temperature = Decimal(0)
         self._temperature_range = (Decimal(0), Decimal(0))
         self._on_rpi = utils.on_rpi()
+        self._mode = utils.Mode.OFF
         self._state = utils.State.IDLE
 
         self.logger = getLogger('app.thermostat')
         self.temperature_offset = Decimal('1.5')
-        self.mode = utils.Mode.OFF
         self.last_state_update = 0
 
         self.cost_table = None  # must init after thread starts
@@ -351,6 +351,18 @@ class Thermostat(threading.Thread, metaclass=utils.Singleton):
     @property
     def is_active(self):
         return self.state != utils.State.IDLE
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode):
+        if self.on_rpi and mode == utils.Mode.OFF:
+            GPIO.output(config.FAN_PIN, config.RELAY_OFF)
+            GPIO.output(config.HEAT_PIN, config.RELAY_OFF)
+            GPIO.output(config.COOL_PIN, config.RELAY_OFF)
+        self._mode = mode
 
     @property
     def state(self):
