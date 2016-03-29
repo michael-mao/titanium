@@ -80,6 +80,7 @@ class GUI(metaclass=utils.Singleton):
         # create window
         if utils.on_rpi():
             self.screen = pygame.display.set_mode(self.SIZE, pygame.FULLSCREEN)
+            pygame.mouse.set_visible(False)
         else:
             self.screen = pygame.display.set_mode(self.SIZE)
 
