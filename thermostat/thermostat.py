@@ -4,8 +4,6 @@ import time
 import datetime
 import threading
 
-import RPi.GPIO as GPIO
-
 from logging import getLogger
 from decimal import Decimal
 from collections import OrderedDict
@@ -13,6 +11,9 @@ from collections import OrderedDict
 from pubnub import Pubnub
 
 from . import errors, utils, weather, sensor, sql, config, decision
+
+if utils.on_rpi():
+    import RPi.GPIO as GPIO
 
 
 class Thermostat(threading.Thread, metaclass=utils.Singleton):

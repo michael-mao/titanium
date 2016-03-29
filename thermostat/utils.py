@@ -9,8 +9,6 @@ import datetime
 import decimal
 import urllib.request
 
-import RPi.GPIO as GPIO
-
 from enum import Enum, unique
 
 from . import config
@@ -105,6 +103,8 @@ def init_rpi():
 
     :return: None
     """
+    import RPi.GPIO as GPIO
+
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(config.FAN_PIN, GPIO.OUT)
     GPIO.setup(config.HEAT_PIN, GPIO.OUT)
